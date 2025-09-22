@@ -14,6 +14,13 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  .footer-links svg {
+    width: 28px;
+    height: 28px;
+    max-width: 32px;
+    max-height: 32px;
+    display: inline-block;
+  }
   background: rgba(0,0,0,0.20);
   backdrop-filter: blur(12px);
   border-radius: 20px;

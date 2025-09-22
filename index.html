@@ -117,7 +117,12 @@
   window.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
       var welcomeH1 = document.querySelector('.hero h1');
-      if (welcomeH1) welcomeH1.style.opacity = '0';
+      if (welcomeH1) {
+        welcomeH1.style.opacity = '0';
+        setTimeout(function() {
+          welcomeH1.style.visibility = 'hidden';
+        }, 700); // matches transition duration
+      }
     }, 2000);
   });
 </script>
