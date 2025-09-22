@@ -1,10 +1,86 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Website</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kaden | Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', Arial, sans-serif;
+      background: linear-gradient(120deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: rgba(0,0,0,0.6);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      padding: 48px 32px;
+      max-width: 400px;
+      text-align: center;
+      animation: fadeIn 1.2s ease;
+    }
+    h1 {
+      font-family: 'Montserrat', Arial, sans-serif;
+      font-size: 2.5rem;
+      margin-bottom: 0.5em;
+      letter-spacing: 2px;
+    }
+    p {
+      font-size: 1.15rem;
+      margin-bottom: 1.5em;
+      color: #e0e0e0;
+    }
+    .social {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 1em;
+    }
+    .social a {
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      transition: background 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    .social a:hover {
+      background: #fff;
+      color: #2a5298;
+      transform: scale(1.15);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <p>Welcome to my site hosted on GitHub Pages!</p>
+  <div class="container">
+    <h1>Kaden</h1>
+    <p>Hi, I'm Kaden. Welcome to my personal website!<br>
+    I'm passionate about technology, coding, and design.<br>
+    Connect with me below:</p>
+    <div class="social">
+      <a href="https://github.com/Kadn0" title="GitHub" target="_blank" rel="noopener">&#xf09b;</a>
+      <a href="https://linkedin.com/in/yourprofile" title="LinkedIn" target="_blank" rel="noopener">&#xf0e1;</a>
+      <a href="mailto:your@email.com" title="Email">&#xf0e0;</a>
+    </div>
+  </div>
+  <!-- Font Awesome icons -->
+  <script src="https://kit.fontawesome.com/4b8b7b9e6a.js" crossorigin="anonymous"></script>
 </body>
 </html>
