@@ -1,11 +1,9 @@
-<link rel="stylesheet" href="style.css">
-<script src="main.js" type="module"></script>
+// ...existing code...
 import * as THREE from "https://esm.sh/three@0.178.0";
-import { Pane } from "https://cdn.skypack.dev/tweakpane@4.0.4";
+// ...existing code...
 
 let scene, camera, renderer, material;
-let clock,
-  mouse = { x: 0, y: 0 };
+let clock;
 let cursorSphere3D = new THREE.Vector3(0, 0, 0);
 let activeMerges = 0;
 let targetMousePosition = new THREE.Vector2(0.5, 0.5);
@@ -26,186 +24,7 @@ const devicePixelRatio = Math.min(
 );
 
 const presets = {
-  moody: {
-    sphereCount: isMobile ? 4 : 6,
-    ambientIntensity: 0.02,
-    diffuseIntensity: 0.6,
-    specularIntensity: 1.8,
-    specularPower: 8,
-    fresnelPower: 1.2,
-    backgroundColor: new THREE.Color(0x050505),
-    sphereColor: new THREE.Color(0x000000),
-    lightColor: new THREE.Color(0xffffff),
-    lightPosition: new THREE.Vector3(1, 1, 1),
-    smoothness: 0.3,
-    contrast: 2.0,
-    fogDensity: 0.12,
-    cursorGlowIntensity: 0.4,
-    cursorGlowRadius: 1.2,
-    cursorGlowColor: new THREE.Color(0xffffff)
-  },
-  cosmic: {
-    sphereCount: isMobile ? 5 : 8,
-    ambientIntensity: 0.03,
-    diffuseIntensity: 0.8,
-    specularIntensity: 1.6,
-    specularPower: 6,
-    fresnelPower: 1.4,
-    backgroundColor: new THREE.Color(0x000011),
-    sphereColor: new THREE.Color(0x000022),
-    lightColor: new THREE.Color(0x88aaff),
-    lightPosition: new THREE.Vector3(0.5, 1, 0.5),
-    smoothness: 0.4,
-    contrast: 2.0,
-    fogDensity: 0.15,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.5,
-    cursorGlowColor: new THREE.Color(0x4477ff)
-  },
-  minimal: {
-    sphereCount: isMobile ? 2 : 3,
-    ambientIntensity: 0.0,
-    diffuseIntensity: 0.25,
-    specularIntensity: 1.3,
-    specularPower: 11,
-    fresnelPower: 1.7,
-    backgroundColor: new THREE.Color(0x0a0a0a),
-    sphereColor: new THREE.Color(0x000000),
-    lightColor: new THREE.Color(0xffffff),
-    lightPosition: new THREE.Vector3(1, 0.5, 0.8),
-    smoothness: 0.25,
-    contrast: 2.0,
-    fogDensity: 0.1,
-    cursorGlowIntensity: 0.3,
-    cursorGlowRadius: 1.0,
-    cursorGlowColor: new THREE.Color(0xffffff)
-  },
-  vibrant: {
-    sphereCount: isMobile ? 6 : 10,
-    ambientIntensity: 0.05,
-    diffuseIntensity: 0.9,
-    specularIntensity: 1.5,
-    specularPower: 5,
-    fresnelPower: 1.3,
-    backgroundColor: new THREE.Color(0x0a0505),
-    sphereColor: new THREE.Color(0x110000),
-    lightColor: new THREE.Color(0xff8866),
-    lightPosition: new THREE.Vector3(0.8, 1.2, 0.6),
-    smoothness: 0.5,
-    contrast: 2.0,
-    fogDensity: 0.08,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.3,
-    cursorGlowColor: new THREE.Color(0xff6644)
-  },
-  neon: {
-    sphereCount: isMobile ? 4 : 7,
-    ambientIntensity: 0.04,
-    diffuseIntensity: 1.0,
-    specularIntensity: 2.0,
-    specularPower: 4,
-    fresnelPower: 1.0,
-    backgroundColor: new THREE.Color(0x000505),
-    sphereColor: new THREE.Color(0x000808),
-    lightColor: new THREE.Color(0x00ffcc),
-    lightPosition: new THREE.Vector3(0.7, 1.3, 0.8),
-    smoothness: 0.7,
-    contrast: 2.0,
-    fogDensity: 0.08,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.4,
-    cursorGlowColor: new THREE.Color(0x00ffaa)
-  },
-  sunset: {
-    sphereCount: isMobile ? 3 : 5,
-    ambientIntensity: 0.04,
-    diffuseIntensity: 0.7,
-    specularIntensity: 1.4,
-    specularPower: 7,
-    fresnelPower: 1.5,
-    backgroundColor: new THREE.Color(0x150505),
-    sphereColor: new THREE.Color(0x100000),
-    lightColor: new THREE.Color(0xff6622),
-    lightPosition: new THREE.Vector3(1.2, 0.4, 0.6),
-    smoothness: 0.35,
-    contrast: 2.0,
-    fogDensity: 0.1,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.4,
-    cursorGlowColor: new THREE.Color(0xff4422)
-  },
-  midnight: {
-    sphereCount: isMobile ? 3 : 4,
-    ambientIntensity: 0.01,
-    diffuseIntensity: 0.4,
-    specularIntensity: 1.6,
-    specularPower: 9,
-    fresnelPower: 1.8,
-    backgroundColor: new THREE.Color(0x000010),
-    sphereColor: new THREE.Color(0x000015),
-    lightColor: new THREE.Color(0x4466ff),
-    lightPosition: new THREE.Vector3(0.9, 0.8, 1.0),
-    smoothness: 0.28,
-    contrast: 2.0,
-    fogDensity: 0.14,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.6,
-    cursorGlowColor: new THREE.Color(0x3355ff)
-  },
-  toxic: {
-    sphereCount: isMobile ? 5 : 9,
-    ambientIntensity: 0.06,
-    diffuseIntensity: 0.85,
-    specularIntensity: 1.7,
-    specularPower: 6,
-    fresnelPower: 1.1,
-    backgroundColor: new THREE.Color(0x001000),
-    sphereColor: new THREE.Color(0x001500),
-    lightColor: new THREE.Color(0x66ff44),
-    lightPosition: new THREE.Vector3(0.6, 1.1, 0.7),
-    smoothness: 0.55,
-    contrast: 2.0,
-    fogDensity: 0.09,
-    cursorGlowIntensity: 0.8,
-    cursorGlowRadius: 1.7,
-    cursorGlowColor: new THREE.Color(0x44ff22)
-  },
-  pastel: {
-    sphereCount: isMobile ? 4 : 6,
-    ambientIntensity: 0.08,
-    diffuseIntensity: 0.5,
-    specularIntensity: 1.2,
-    specularPower: 12,
-    fresnelPower: 2.0,
-    backgroundColor: new THREE.Color(0x101018),
-    sphereColor: new THREE.Color(0x080814),
-    lightColor: new THREE.Color(0xaabbff),
-    lightPosition: new THREE.Vector3(1.0, 0.7, 0.9),
-    smoothness: 0.38,
-    contrast: 1.8,
-    fogDensity: 0.07,
-    cursorGlowIntensity: 0.35,
-    cursorGlowRadius: 1.1,
-    cursorGlowColor: new THREE.Color(0x8899ff)
-  },
-  dithered: {
-    sphereCount: isMobile ? 5 : 8,
-    ambientIntensity: 0.1,
-    diffuseIntensity: 0.8,
-    specularIntensity: 1.5,
-    specularPower: 6,
-    fresnelPower: 1.2,
-    backgroundColor: new THREE.Color(0x0a0520),
-    sphereColor: new THREE.Color(0x000000),
-    lightColor: new THREE.Color(0xff00ff),
-    lightPosition: new THREE.Vector3(0.8, 0.8, 0.8),
-    smoothness: 0.6,
-    contrast: 1.8,
-    fogDensity: 0.05,
-    cursorGlowIntensity: 1.0,
-    cursorGlowRadius: 2.0,
-    cursorGlowColor: new THREE.Color(0x00ffff)
-  },
+
   holographic: {
     sphereCount: isMobile ? 4 : 6,
     ambientIntensity: 0.12,
@@ -226,9 +45,7 @@ const presets = {
   }
 };
 
-const settings = {
-  preset: "holographic",
-  ...presets.holographic,
+const settings = Object.assign({}, presets.holographic, {
   fixedTopLeftRadius: 0.8,
   fixedBottomRightRadius: 0.9,
   smallTopLeftRadius: 0.3,
@@ -242,13 +59,12 @@ const settings = {
   mouseProximityEffect: true,
   minMovementScale: 0.3,
   maxMovementScale: 1.0
-};
+});
 
 function getStoryText(x, y, radius, merges, fps) {
-  if (isMobile) {
-    return `vessel: (${x}, ${y})<br>field: ${radius}u<br>merges: ${merges}<br>flux: ${fps}hz`;
-  }
-  return `our vessel drifts at coordinates (${x}, ${y})<br>gravitational field extends ${radius} units into quantum foam<br>currently merging with ${merges} other entities<br>temporal flux: ${fps} cycles per second`;
+  return isMobile
+    ? `vessel: (${x}, ${y})<br>field: ${radius}u<br>merges: ${merges}<br>flux: ${fps}hz`
+    : `our vessel drifts at coordinates (${x}, ${y})<br>gravitational field extends ${radius} units into quantum foam<br>currently merging with ${merges} other entities<br>temporal flux: ${fps} cycles per second`;
 }
 
 init();
@@ -269,7 +85,7 @@ function init() {
     premultipliedAlpha: false
   });
 
-  // FIXED: Proper pixel ratio handling
+  // Proper pixel ratio handling
   const pixelRatio = Math.min(devicePixelRatio, isMobile ? 1.5 : 2);
   renderer.setPixelRatio(pixelRatio);
 
@@ -298,7 +114,6 @@ function init() {
     uniforms: {
       uTime: { value: 0 },
       uResolution: { value: new THREE.Vector2(viewportWidth, viewportHeight) },
-      // FIXED: Pass actual canvas size including pixel ratio
       uActualResolution: {
         value: new THREE.Vector2(
           viewportWidth * pixelRatio,
@@ -308,33 +123,34 @@ function init() {
       uPixelRatio: { value: pixelRatio },
       uMousePosition: { value: new THREE.Vector2(0.5, 0.5) },
       uCursorSphere: { value: new THREE.Vector3(0, 0, 0) },
-      uCursorRadius: { value: settings.cursorRadiusMin },
-      uSphereCount: { value: settings.sphereCount },
-      uFixedTopLeftRadius: { value: settings.fixedTopLeftRadius },
-      uFixedBottomRightRadius: { value: settings.fixedBottomRightRadius },
-      uSmallTopLeftRadius: { value: settings.smallTopLeftRadius },
-      uSmallBottomRightRadius: { value: settings.smallBottomRightRadius },
-      uMergeDistance: { value: settings.mergeDistance },
-      uSmoothness: { value: settings.smoothness },
-      uAmbientIntensity: { value: settings.ambientIntensity },
-      uDiffuseIntensity: { value: settings.diffuseIntensity },
-      uSpecularIntensity: { value: settings.specularIntensity },
-      uSpecularPower: { value: settings.specularPower },
-      uFresnelPower: { value: settings.fresnelPower },
-      uBackgroundColor: { value: settings.backgroundColor },
-      uSphereColor: { value: settings.sphereColor },
-      uLightColor: { value: settings.lightColor },
-      uLightPosition: { value: settings.lightPosition },
-      uContrast: { value: settings.contrast },
-      uFogDensity: { value: settings.fogDensity },
-      uAnimationSpeed: { value: settings.animationSpeed },
-      uMovementScale: { value: settings.movementScale },
-      uMouseProximityEffect: { value: settings.mouseProximityEffect },
-      uMinMovementScale: { value: settings.minMovementScale },
-      uMaxMovementScale: { value: settings.maxMovementScale },
-      uCursorGlowIntensity: { value: settings.cursorGlowIntensity },
-      uCursorGlowRadius: { value: settings.cursorGlowRadius },
-      uCursorGlowColor: { value: settings.cursorGlowColor },
+      // Maximize mouse tracker orb visibility and glow
+      uCursorRadius: { value: presets.holographic.cursorRadiusMax },
+      uSphereCount: { value: presets.holographic.sphereCount },
+      uFixedTopLeftRadius: { value: presets.holographic.fixedTopLeftRadius || 0.8 },
+      uFixedBottomRightRadius: { value: presets.holographic.fixedBottomRightRadius || 0.9 },
+      uSmallTopLeftRadius: { value: presets.holographic.smallTopLeftRadius || 0.3 },
+      uSmallBottomRightRadius: { value: presets.holographic.smallBottomRightRadius || 0.35 },
+      uMergeDistance: { value: presets.holographic.mergeDistance || 1.5 },
+      uSmoothness: { value: presets.holographic.smoothness },
+      uAmbientIntensity: { value: presets.holographic.ambientIntensity },
+      uDiffuseIntensity: { value: presets.holographic.diffuseIntensity },
+      uSpecularIntensity: { value: presets.holographic.specularIntensity },
+      uSpecularPower: { value: presets.holographic.specularPower },
+      uFresnelPower: { value: presets.holographic.fresnelPower },
+      uBackgroundColor: { value: presets.holographic.backgroundColor },
+      uSphereColor: { value: presets.holographic.sphereColor },
+      uLightColor: { value: presets.holographic.lightColor },
+      uLightPosition: { value: presets.holographic.lightPosition },
+      uContrast: { value: presets.holographic.contrast },
+      uFogDensity: { value: presets.holographic.fogDensity },
+      uAnimationSpeed: { value: presets.holographic.animationSpeed || 0.6 },
+      uMovementScale: { value: presets.holographic.movementScale || 1.2 },
+      uMouseProximityEffect: { value: presets.holographic.mouseProximityEffect || true },
+      uMinMovementScale: { value: presets.holographic.minMovementScale || 0.3 },
+      uMaxMovementScale: { value: presets.holographic.maxMovementScale || 1.0 },
+      uCursorGlowIntensity: { value: 2.0 },
+      uCursorGlowRadius: { value: 3.0 },
+      uCursorGlowColor: { value: presets.holographic.cursorGlowColor },
       uIsSafari: { value: isSafari ? 1.0 : 0.0 },
       uIsMobile: { value: isMobile ? 1.0 : 0.0 },
       uIsLowPower: { value: isLowPowerDevice ? 1.0 : 0.0 }
@@ -405,11 +221,8 @@ function init() {
         return length(p) - r;
       }
       
-      // FIXED: Use actual resolution for coordinate transformation
       vec3 screenToWorld(vec2 normalizedPos) {
-        // normalizedPos is already 0-1, convert to -1 to 1
         vec2 uv = normalizedPos * 2.0 - 1.0;
-        // Apply aspect ratio correction using logical resolution
         uv.x *= uResolution.x / uResolution.y;
         return vec3(uv * 2.0, 0.0);
       }
@@ -421,44 +234,32 @@ function init() {
       
       float sceneSDF(vec3 pos) {
         float result = MAX_DIST;
-        
-        // Fixed sphere positions using consistent coordinate system
         vec3 topLeftPos = screenToWorld(vec2(0.08, 0.92));
         float topLeft = sdSphere(pos - topLeftPos, uFixedTopLeftRadius);
-        
         vec3 smallTopLeftPos = screenToWorld(vec2(0.25, 0.72));
         float smallTopLeft = sdSphere(pos - smallTopLeftPos, uSmallTopLeftRadius);
-        
         vec3 bottomRightPos = screenToWorld(vec2(0.92, 0.08));
         float bottomRight = sdSphere(pos - bottomRightPos, uFixedBottomRightRadius);
-        
         vec3 smallBottomRightPos = screenToWorld(vec2(0.72, 0.25));
         float smallBottomRight = sdSphere(pos - smallBottomRightPos, uSmallBottomRightRadius);
-        
         float t = uTime * uAnimationSpeed;
-        
         float dynamicMovementScale = uMovementScale;
         if (uMouseProximityEffect) {
           float distToCenter = getDistanceToCenter(uMousePosition);
           float mixFactor = smoothstep(0.0, 1.0, distToCenter);
           dynamicMovementScale = mix(uMinMovementScale, uMaxMovementScale, mixFactor);
         }
-        
-        // Optimized iterations for performance
         int maxIter = uIsMobile > 0.5 ? 4 : (uIsLowPower > 0.5 ? 6 : min(uSphereCount, 10));
         for (int i = 0; i < 10; i++) {
           if (i >= uSphereCount || i >= maxIter) break;
-          
           float fi = float(i);
           float speed = 0.4 + fi * 0.12;
           float radius = 0.12 + mod(fi, 3.0) * 0.06;
           float orbitRadius = (0.3 + mod(fi, 3.0) * 0.15) * dynamicMovementScale;
           float phaseOffset = fi * PI * 0.35;
-          
           float distToCursor = length(vec3(0.0) - uCursorSphere);
           float proximityScale = 1.0 + (1.0 - smoothstep(0.0, 1.0, distToCursor)) * 0.5;
           orbitRadius *= proximityScale;
-          
           vec3 offset;
           if (i == 0) {
             offset = vec3(
@@ -479,37 +280,28 @@ function init() {
               sin(t * speed * 0.5 + phaseOffset) * 0.3
             );
           }
-          
           vec3 toCursor = uCursorSphere - offset;
           float cursorDist = length(toCursor);
           if (cursorDist < uMergeDistance && cursorDist > 0.0) {
             float attraction = (1.0 - cursorDist / uMergeDistance) * 0.3;
             offset += normalize(toCursor) * attraction;
           }
-          
           float movingSphere = sdSphere(pos - offset, radius);
-          
           float blend = 0.05;
           if (cursorDist < uMergeDistance) {
             float influence = 1.0 - (cursorDist / uMergeDistance);
             blend = mix(0.05, uSmoothness, influence * influence * influence);
           }
-          
           result = smin(result, movingSphere, blend);
         }
-        
         float cursorBall = sdSphere(pos - uCursorSphere, uCursorRadius);
-        
         float topLeftGroup = smin(topLeft, smallTopLeft, 0.4);
         float bottomRightGroup = smin(bottomRight, smallBottomRight, 0.4);
-        
         result = smin(result, topLeftGroup, 0.3);
         result = smin(result, bottomRightGroup, 0.3);
         result = smin(result, cursorBall, uSmoothness);
-        
         return result;
       }
-      
       vec3 calcNormal(vec3 p) {
         float eps = uIsLowPower > 0.5 ? 0.002 : 0.001;
         return normalize(vec3(
@@ -518,7 +310,6 @@ function init() {
           sceneSDF(p + vec3(0, 0, eps)) - sceneSDF(p - vec3(0, 0, eps))
         ));
       }
-      
       float ambientOcclusion(vec3 p, vec3 n) {
         if (uIsLowPower > 0.5) {
           float h1 = sceneSDF(p + n * 0.03);
@@ -537,7 +328,6 @@ function init() {
           return clamp(1.0 - occ, 0.0, 1.0);
         }
       }
-      
       float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float k) {
         if (uIsLowPower > 0.5) {
           float result = 1.0;
@@ -563,107 +353,73 @@ function init() {
           return result;
         }
       }
-      
       float rayMarch(vec3 ro, vec3 rd) {
         float t = 0.0;
         int maxSteps = uIsMobile > 0.5 ? 16 : (uIsSafari > 0.5 ? 16 : 48);
-        
         for (int i = 0; i < 48; i++) {
           if (i >= maxSteps) break;
-          
           vec3 p = ro + rd * t;
           float d = sceneSDF(p);
-          
           if (d < EPSILON) {
             return t;
           }
-          
           if (t > 5.0) {
             break;
           }
-          
           t += d * (uIsLowPower > 0.5 ? 1.2 : 0.9);
         }
-        
         return -1.0;
       }
-      
       vec3 lighting(vec3 p, vec3 rd, float t) {
         if (t < 0.0) {
           return vec3(0.0);
         }
-        
         vec3 normal = calcNormal(p);
         vec3 viewDir = -rd;
-        
         vec3 baseColor = uSphereColor;
-        
         float ao = ambientOcclusion(p, normal);
-        
         vec3 ambient = uLightColor * uAmbientIntensity * ao;
-        
         vec3 lightDir = normalize(uLightPosition);
         float diff = max(dot(normal, lightDir), 0.0);
-        
         float shadow = softShadow(p, lightDir, 0.01, 10.0, 20.0);
-        
         vec3 diffuse = uLightColor * diff * uDiffuseIntensity * shadow;
-        
         vec3 reflectDir = reflect(-lightDir, normal);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), uSpecularPower);
         float fresnel = pow(1.0 - max(dot(viewDir, normal), 0.0), uFresnelPower);
-        
         vec3 specular = uLightColor * spec * uSpecularIntensity * fresnel;
-        
         vec3 fresnelRim = uLightColor * fresnel * 0.4;
-        
         float distToCursor = length(p - uCursorSphere);
         if (distToCursor < uCursorRadius + 0.4) {
           float highlight = 1.0 - smoothstep(0.0, uCursorRadius + 0.4, distToCursor);
           specular += uLightColor * highlight * 0.2;
-          
           float glow = exp(-distToCursor * 3.0) * 0.15;
           ambient += uLightColor * glow * 0.5;
         }
-        
         vec3 color = (baseColor + ambient + diffuse + specular + fresnelRim) * ao;
-        
         color = pow(color, vec3(uContrast * 0.9));
         color = color / (color + vec3(0.8));
-        
         return color;
       }
-      
       float calculateCursorGlow(vec3 worldPos) {
         float dist = length(worldPos.xy - uCursorSphere.xy);
         float glow = 1.0 - smoothstep(0.0, uCursorGlowRadius, dist);
         glow = pow(glow, 2.0);
         return glow * uCursorGlowIntensity;
       }
-      
       void main() {
-        // FIXED: Use actual resolution for proper coordinate calculation
         vec2 uv = (gl_FragCoord.xy * 2.0 - uActualResolution.xy) / uActualResolution.xy;
         uv.x *= uResolution.x / uResolution.y;
-        
         vec3 ro = vec3(uv * 2.0, -1.0);
         vec3 rd = vec3(0.0, 0.0, 1.0);
-        
         float t = rayMarch(ro, rd);
-        
         vec3 p = ro + rd * t;
-        
         vec3 color = lighting(p, rd, t);
-        
         float cursorGlow = calculateCursorGlow(ro);
         vec3 glowContribution = uCursorGlowColor * cursorGlow;
-        
         if (t > 0.0) {
           float fogAmount = 1.0 - exp(-t * uFogDensity);
           color = mix(color, uBackgroundColor.rgb, fogAmount * 0.3);
-          
           color += glowContribution * 0.3;
-          
           gl_FragColor = vec4(color, 1.0);
         } else {
           if (cursorGlow > 0.01) {
@@ -681,7 +437,13 @@ function init() {
   const mesh = new THREE.Mesh(geometry, material);
   scene.add(mesh);
 
-  setupUI();
+  // Force holographic preset and maximize mouse tracker orb visibility
+  applyPreset("holographic");
+  material.uniforms.uCursorGlowIntensity.value = 2.0;
+  material.uniforms.uCursorGlowRadius.value = 3.0;
+  material.uniforms.uCursorRadius.value = presets.holographic.cursorRadiusMax;
+
+  // Removed setupUI();
   setupEventListeners();
 
   // Initialize cursor position
@@ -808,299 +570,16 @@ function updateStory(x, y, radius, merges, fps) {
 function applyPreset(presetName) {
   const preset = presets[presetName];
   if (!preset) return;
-
-  settings.preset = presetName;
-  Object.keys(preset).forEach((key) => {
-    if (settings.hasOwnProperty(key)) {
-      settings[key] = preset[key];
+  Object.assign(settings, preset);
+  Object.entries(preset).forEach(([key, value]) => {
+    const uniformKey = `u${key.charAt(0).toUpperCase() + key.slice(1)}`;
+    if (material.uniforms[uniformKey]) {
+      material.uniforms[uniformKey].value = value;
     }
   });
-
-  // Update uniforms
-  material.uniforms.uSphereCount.value = settings.sphereCount;
-  material.uniforms.uAmbientIntensity.value = settings.ambientIntensity;
-  material.uniforms.uDiffuseIntensity.value = settings.diffuseIntensity;
-  material.uniforms.uSpecularIntensity.value = settings.specularIntensity;
-  material.uniforms.uSpecularPower.value = settings.specularPower;
-  material.uniforms.uFresnelPower.value = settings.fresnelPower;
-  material.uniforms.uBackgroundColor.value = settings.backgroundColor;
-  material.uniforms.uSphereColor.value = settings.sphereColor;
-  material.uniforms.uLightColor.value = settings.lightColor;
-  material.uniforms.uLightPosition.value = settings.lightPosition;
-  material.uniforms.uSmoothness.value = settings.smoothness;
-  material.uniforms.uContrast.value = settings.contrast;
-  material.uniforms.uFogDensity.value = settings.fogDensity;
-  material.uniforms.uCursorGlowIntensity.value = settings.cursorGlowIntensity;
-  material.uniforms.uCursorGlowRadius.value = settings.cursorGlowRadius;
-  material.uniforms.uCursorGlowColor.value = settings.cursorGlowColor;
 }
 
-function setupUI() {
-  const uiContainer = document.getElementById("ui-container");
-  if (!uiContainer) return;
-
-  const pane = new Pane({
-    container: uiContainer,
-    title: "Metaball Controls",
-    expanded: !isMobile
-  });
-
-  pane
-    .addBinding(settings, "preset", {
-      options: {
-        Moody: "moody",
-        Cosmic: "cosmic",
-        Minimal: "minimal",
-        Vibrant: "vibrant",
-        Neon: "neon",
-        Sunset: "sunset",
-        Midnight: "midnight",
-        Toxic: "toxic",
-        Pastel: "pastel",
-        Psychedelic: "dithered",
-        Holographic: "holographic"
-      }
-    })
-    .on("change", (ev) => {
-      applyPreset(ev.value);
-      pane.refresh();
-    });
-
-  const metaballFolder = pane.addFolder({ title: "Metaballs" });
-
-  metaballFolder
-    .addBinding(settings, "fixedTopLeftRadius", {
-      min: 0.2,
-      max: 2.0,
-      step: 0.01,
-      label: "Top Left Size"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uFixedTopLeftRadius.value = ev.value;
-    });
-
-  metaballFolder
-    .addBinding(settings, "fixedBottomRightRadius", {
-      min: 0.2,
-      max: 2.0,
-      step: 0.01,
-      label: "Bottom Right Size"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uFixedBottomRightRadius.value = ev.value;
-    });
-
-  metaballFolder
-    .addBinding(settings, "smallTopLeftRadius", {
-      min: 0.1,
-      max: 0.8,
-      step: 0.01,
-      label: "Small Top Left"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSmallTopLeftRadius.value = ev.value;
-    });
-
-  metaballFolder
-    .addBinding(settings, "smallBottomRightRadius", {
-      min: 0.1,
-      max: 0.8,
-      step: 0.01,
-      label: "Small Bottom Right"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSmallBottomRightRadius.value = ev.value;
-    });
-
-  metaballFolder
-    .addBinding(settings, "sphereCount", {
-      min: 2,
-      max: 10,
-      step: 1,
-      label: "Moving Count"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSphereCount.value = ev.value;
-    });
-
-  metaballFolder
-    .addBinding(settings, "smoothness", {
-      min: 0.1,
-      max: 1.0,
-      step: 0.01,
-      label: "Blend Smoothness"
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSmoothness.value = ev.value;
-    });
-
-  const mouseFolder = pane.addFolder({ title: "Mouse Interaction" });
-
-  mouseFolder
-    .addBinding(settings, "mouseProximityEffect")
-    .on("change", (ev) => {
-      material.uniforms.uMouseProximityEffect.value = ev.value;
-    });
-
-  mouseFolder
-    .addBinding(settings, "minMovementScale", {
-      min: 0.1,
-      max: 1.0,
-      step: 0.05
-    })
-    .on("change", (ev) => {
-      material.uniforms.uMinMovementScale.value = ev.value;
-    });
-
-  mouseFolder
-    .addBinding(settings, "maxMovementScale", {
-      min: 0.5,
-      max: 2.0,
-      step: 0.05
-    })
-    .on("change", (ev) => {
-      material.uniforms.uMaxMovementScale.value = ev.value;
-    });
-
-  mouseFolder.addBinding(settings, "mouseSmoothness", {
-    min: 0.01,
-    max: 0.2,
-    step: 0.01,
-    label: "Mouse Smoothness"
-  });
-
-  const cursorFolder = pane.addFolder({ title: "Cursor" });
-
-  cursorFolder.addBinding(settings, "cursorRadiusMin", {
-    min: 0.05,
-    max: 0.2,
-    step: 0.01,
-    label: "Min Radius"
-  });
-
-  cursorFolder.addBinding(settings, "cursorRadiusMax", {
-    min: 0.1,
-    max: 0.25,
-    step: 0.01,
-    label: "Max Radius"
-  });
-
-  const animationFolder = pane.addFolder({ title: "Animation" });
-
-  animationFolder
-    .addBinding(settings, "animationSpeed", {
-      min: 0.1,
-      max: 3.0,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uAnimationSpeed.value = ev.value;
-    });
-
-  animationFolder
-    .addBinding(settings, "movementScale", {
-      min: 0.5,
-      max: 2.0,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uMovementScale.value = ev.value;
-    });
-
-  const lightingFolder = pane.addFolder({ title: "Lighting" });
-
-  lightingFolder
-    .addBinding(settings, "ambientIntensity", {
-      min: 0,
-      max: 0.5,
-      step: 0.01
-    })
-    .on("change", (ev) => {
-      material.uniforms.uAmbientIntensity.value = ev.value;
-    });
-
-  lightingFolder
-    .addBinding(settings, "diffuseIntensity", {
-      min: 0,
-      max: 1.0,
-      step: 0.01
-    })
-    .on("change", (ev) => {
-      material.uniforms.uDiffuseIntensity.value = ev.value;
-    });
-
-  lightingFolder
-    .addBinding(settings, "specularIntensity", {
-      min: 0,
-      max: 2.0,
-      step: 0.01
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSpecularIntensity.value = ev.value;
-    });
-
-  lightingFolder
-    .addBinding(settings, "specularPower", {
-      min: 1,
-      max: 64,
-      step: 1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uSpecularPower.value = ev.value;
-    });
-
-  lightingFolder
-    .addBinding(settings, "fresnelPower", {
-      min: 1,
-      max: 5,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uFresnelPower.value = ev.value;
-    });
-
-  lightingFolder
-    .addBinding(settings, "contrast", {
-      min: 0.5,
-      max: 2.0,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uContrast.value = ev.value;
-    });
-
-  const glowFolder = pane.addFolder({ title: "Cursor Glow" });
-
-  glowFolder
-    .addBinding(settings, "cursorGlowIntensity", {
-      min: 0,
-      max: 2.0,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uCursorGlowIntensity.value = ev.value;
-    });
-
-  glowFolder
-    .addBinding(settings, "cursorGlowRadius", {
-      min: 0.5,
-      max: 3.0,
-      step: 0.1
-    })
-    .on("change", (ev) => {
-      material.uniforms.uCursorGlowRadius.value = ev.value;
-    });
-
-  glowFolder
-    .addBinding(settings, "fogDensity", {
-      min: 0,
-      max: 0.5,
-      step: 0.01
-    })
-    .on("change", (ev) => {
-      material.uniforms.uFogDensity.value = ev.value;
-    });
-}
+// Removed setupUI and all UI controls
 
 function onWindowResize() {
   const width = window.innerWidth;
@@ -1176,22 +655,19 @@ function render() {
 }
 
 // Email functionality
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
   const emailLink = document.querySelector(".contact-email");
   if (emailLink) {
     const originalText = emailLink.textContent;
-    emailLink.addEventListener("click", function (e) {
+    emailLink.addEventListener("click", (e) => {
       e.preventDefault();
-      navigator.clipboard
-        .writeText("hi@filip.fyi")
+      navigator.clipboard.writeText("contact@kadents.com")
         .then(() => {
-          emailLink.textContent = "transmission sent to clipboard";
-          setTimeout(() => {
-            emailLink.textContent = originalText;
-          }, 2000);
+          emailLink.textContent = "Copy sent to clipboard";
+          setTimeout(() => { emailLink.textContent = originalText; }, 2000);
         })
         .catch(() => {
-          window.location.href = "mailto:hi@filip.fyi";
+          window.location.href = "mailto:contact@kadents.com";
         });
     });
   }
