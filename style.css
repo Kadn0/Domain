@@ -212,8 +212,8 @@ body {
   --icon-bg: linear-gradient(135deg, rgba(74, 98, 141, 0.7), rgba(139, 174, 197, 0.65));
 }
 
-.service-card--crafty {
-  --icon-bg: linear-gradient(135deg, rgba(255, 209, 102, 0.7), rgba(247, 127, 0, 0.6));
+\.service-card--amp {
+  --icon-bg: linear-gradient(135deg, rgba(120, 199, 255, 0.7), rgba(78, 108, 255, 0.6));
 }
 .service-header h2 {
   margin: 0;
@@ -363,6 +363,7 @@ button.link-button,
     width: 100%;
   }
 }
+
 
 
 
