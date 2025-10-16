@@ -222,7 +222,7 @@ async function fetchMinecraftStatus(element) {
   if (!element) return;
   updateStatusChip(element, null, 'Checking server status...');
   try {
-    const response = await fetch('https://api.mcsrvstat.us/2/mc.kadents.com:25566', { cache: 'no-store' });
+    const response = await fetch('https://api.mcsrvstat.us/2/mc.kadents.com:25565', { cache: 'no-store' });
     if (!response.ok) throw new Error(`Request failed with ${response.status}`);
     const data = await response.json();
 
