@@ -3,6 +3,7 @@ const STATUS_REFRESH_INTERVAL = 60000;
 
 const STATUS_ICON = {
   online: "\u{1F7E2}", // ??
+  sleeping: "\u{1F7E0}", // ??
   offline: "\u{1F534}", // ??
   warning: "\u26A0\uFE0F", // ??
 };
@@ -212,33 +213,59 @@ function initBackground() {
 function updateStatusChip(element, statusClass, message) {
   if (!element) return;
   element.textContent = message;
-  element.classList.remove('is-online', 'is-offline', 'is-error');
+  element.setAttribute('aria-label', message);
+  element.classList.remove('is-online', 'is-sleeping', 'is-offline', 'is-error');
   if (statusClass) {
     element.classList.add(statusClass);
+  }
+}
+
+function setStatusTooltip(element, message) {
+  if (!element) return;
+  if (message) {
+    element.dataset.tooltip = message;
+  } else {
+    delete element.dataset.tooltip;
   }
 }
 
 async function fetchMinecraftStatus(element) {
   if (!element) return;
   updateStatusChip(element, null, 'Checking server status...');
+  setStatusTooltip(element, null);
   try {
     const response = await fetch('https://api.mcsrvstat.us/2/mc.kadents.com', { cache: 'no-store' });
     if (!response.ok) throw new Error(`Request failed with ${response.status}`);
     const data = await response.json();
 
     if (data?.online) {
-      const playerCount = Number.isFinite(data?.players?.online) ? data.players.online : 0;
+      const playerList = Array.isArray(data?.players?.list)
+        ? data.players.list.filter((name) => typeof name === 'string' && name.trim().length > 0)
+        : [];
+      const reportedCount = Number.isFinite(data?.players?.online) ? data.players.online : playerList.length;
+      const playerCount = Math.max(0, reportedCount);
       const suffix = playerCount === 1 ? 'player' : 'players';
-      updateStatusChip(
-        element,
-        'is-online',
-        `${STATUS_ICON.online} Minecraft Server - Online (${playerCount} ${suffix})`
-      );
+      if (playerCount > 0) {
+        updateStatusChip(
+          element,
+          'is-online',
+          `${STATUS_ICON.online} Minecraft Server - Online (${playerCount} ${suffix})`
+        );
+        const tooltip = playerList.length
+          ? `Online players:\n${playerList.join('\n')}`
+          : `Online players: ${playerCount}`;
+        setStatusTooltip(element, tooltip);
+      } else {
+        updateStatusChip(element, 'is-sleeping', `${STATUS_ICON.sleeping} Minecraft Server - Sleeping`);
+        setStatusTooltip(element, 'Server is idle (no players online).');
+      }
     } else {
       updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server -  Offline`);
+      setStatusTooltip(element, null);
     }
   } catch (error) {
     updateStatusChip(element, 'is-error', `${STATUS_ICON.warning} Error checking Minecraft`);
+    setStatusTooltip(element, null);
   }
 }
 
@@ -282,4 +309,3 @@ function initStatusChecks() {
 initBackground();
 initCopyControls();
 initStatusChecks();
-

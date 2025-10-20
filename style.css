@@ -116,11 +116,79 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.status-chip[data-tooltip] {
+  position: relative;
+}
+
+.status-chip[data-tooltip]::before,
+.status-chip[data-tooltip]::after {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.status-chip[data-tooltip]::after {
+  content: attr(data-tooltip);
+  bottom: calc(100% + 0.75rem);
+  background: rgba(14, 24, 44, 0.94);
+  border: 1px solid rgba(128, 187, 255, 0.35);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  color: rgba(207, 226, 255, 0.92);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  box-shadow: 0 18px 36px rgba(4, 10, 24, 0.5);
+  width: max-content;
+  max-width: clamp(14rem, 30vw, 18rem);
+  z-index: 10;
+}
+
+.status-chip[data-tooltip]::before {
+  content: "";
+  bottom: calc(100% + 0.4rem);
+  width: 12px;
+  height: 8px;
+  background: rgba(14, 24, 44, 0.94);
+  border-left: 1px solid rgba(128, 187, 255, 0.35);
+  border-bottom: 1px solid rgba(128, 187, 255, 0.35);
+  transform: translate(-50%, 0) rotate(45deg);
+  box-shadow: 0 12px 24px rgba(4, 10, 24, 0.35);
+  z-index: 9;
+}
+
+.status-chip[data-tooltip]:hover::before,
+.status-chip[data-tooltip]:hover::after,
+.status-chip[data-tooltip]:focus-visible::before,
+.status-chip[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
+.status-chip[data-tooltip]:hover::after,
+.status-chip[data-tooltip]:focus-visible::after {
+  transform: translate(-50%, -6px);
+}
+
+.status-chip[data-tooltip]:hover::before,
+.status-chip[data-tooltip]:focus-visible::before {
+  transform: translate(-50%, -6px) rotate(45deg);
+}
+
 .status-chip.is-online {
   background: linear-gradient(135deg, rgba(82, 246, 176, 0.25), rgba(31, 216, 119, 0.15));
   border-color: rgba(82, 246, 176, 0.45);
   color: #82f6b0;
   box-shadow: 0 14px 32px rgba(31, 216, 119, 0.25);
+}
+
+.status-chip.is-sleeping {
+  background: linear-gradient(135deg, rgba(255, 197, 120, 0.3), rgba(255, 143, 63, 0.18));
+  border-color: rgba(255, 182, 94, 0.55);
+  color: #ffc98b;
+  box-shadow: 0 14px 32px rgba(255, 170, 82, 0.25);
 }
 
 .status-chip.is-offline {
@@ -363,8 +431,6 @@ button.link-button,
     width: 100%;
   }
 }
-
-
 
 
 
