@@ -8,6 +8,14 @@ const STATUS_ICON = {
   warning: "\u26A0\uFE0F", // ??
 };
 
+const MINECRAFT_HOST = 'mc.kadents.com';
+const PLAYER_UUID_OVERRIDES = {
+  '00000000-0000-0000-0000-000000000000': 'Kaden (Admin)',
+};
+const PLAYER_ALIAS_OVERRIDES = {
+  'Anonymous Player': 'Kaden (Admin)',
+};
+
 function initCopyControls() {
   const controls = Array.from(document.querySelectorAll('[data-copy]'));
   if (!controls.length) return;
@@ -229,35 +237,121 @@ function setStatusTooltip(element, message) {
   }
 }
 
+async function fetchAdditionalMinecraftNames() {
+  try {
+    const response = await fetch(`https://api.mcstatus.io/v2/status/java/${MINECRAFT_HOST}`, { cache: 'no-store' });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    const entries = Array.isArray(payload?.players?.list) ? payload.players.list : [];
+    return entries
+      .map((entry) => {
+        if (typeof entry === 'string') return entry;
+        if (entry && typeof entry === 'object') {
+          const uuidValue =
+            typeof entry.uuid === 'string'
+              ? entry.uuid.trim().toLowerCase()
+              : null;
+          if (uuidValue && PLAYER_UUID_OVERRIDES[uuidValue]) {
+            return PLAYER_UUID_OVERRIDES[uuidValue];
+          }
+
+          return (
+            entry.name_clean ??
+            entry.name_raw ??
+            entry.name ??
+            entry.ign ??
+            null
+          );
+        }
+        return null;
+      })
+      .filter((value) => typeof value === 'string' && value.trim().length > 0);
+  } catch (error) {
+    return [];
+  }
+}
+
 async function fetchMinecraftStatus(element) {
   if (!element) return;
   updateStatusChip(element, null, 'Checking server status...');
   setStatusTooltip(element, null);
   try {
-    const response = await fetch('https://api.mcsrvstat.us/2/mc.kadents.com', { cache: 'no-store' });
+    const response = await fetch(`https://api.mcsrvstat.us/2/${MINECRAFT_HOST}`, { cache: 'no-store' });
     if (!response.ok) throw new Error(`Request failed with ${response.status}`);
     const data = await response.json();
 
     if (data?.online) {
-      const playerList = Array.isArray(data?.players?.list)
-        ? data.players.list.filter((name) => typeof name === 'string' && name.trim().length > 0)
-        : [];
-      const reportedCount = Number.isFinite(data?.players?.online) ? data.players.online : playerList.length;
+      const collectedNames = [];
+      const seenNames = new Set();
+
+      const addName = (value) => {
+        if (typeof value !== 'string') return;
+        const rawName = value.trim();
+        if (!rawName.length) return;
+        const displayName = PLAYER_ALIAS_OVERRIDES[rawName] ?? rawName;
+        const key = displayName.toLowerCase();
+        if (seenNames.has(key)) return;
+        seenNames.add(key);
+        collectedNames.push(displayName);
+      };
+
+      if (Array.isArray(data?.players?.list)) {
+        data.players.list.forEach(addName);
+      }
+
+      if (Array.isArray(data?.players?.sample)) {
+        data.players.sample.forEach((entry) => {
+          if (entry && typeof entry === 'object') {
+            if ('name' in entry) addName(entry.name);
+            if ('ign' in entry) addName(entry.ign);
+          }
+        });
+      }
+
+      if (data?.players?.uuid && typeof data.players.uuid === 'object') {
+        Object.keys(data.players.uuid).forEach(addName);
+      }
+
+      const reportedCount = Number.isFinite(data?.players?.online) ? data.players.online : collectedNames.length;
       const playerCount = Math.max(0, reportedCount);
       const suffix = playerCount === 1 ? 'player' : 'players';
+
+      if (playerCount > collectedNames.length) {
+        const fallbackNames = await fetchAdditionalMinecraftNames();
+        if (fallbackNames.length) {
+          fallbackNames.forEach(addName);
+        }
+      }
+
+      const playerList = collectedNames;
+      const hiddenCount = Math.max(0, playerCount - playerList.length);
+
       if (playerCount > 0) {
         updateStatusChip(
           element,
           'is-online',
           `${STATUS_ICON.online} Minecraft Server - Online (${playerCount} ${suffix})`
         );
-        const tooltip = playerList.length
-          ? `Online players:\n${playerList.join('\n')}`
-          : `Online players: ${playerCount}`;
-        setStatusTooltip(element, tooltip);
+
+        const tooltipLines = ['Players online: ' + playerCount];
+
+        if (playerList.length) {
+          tooltipLines.push(...playerList);
+        }
+
+        if (hiddenCount > 0) {
+          const hiddenSuffix = hiddenCount === 1 ? 'player' : 'players';
+          tooltipLines.push(`+${hiddenCount} more ${hiddenSuffix} online`);
+        }
+
+        setStatusTooltip(element, tooltipLines.join('\n'));
       } else {
-        updateStatusChip(element, 'is-sleeping', `${STATUS_ICON.sleeping} Minecraft Server - Sleeping`);
-        setStatusTooltip(element, 'Server is idle (no players online).');
+        updateStatusChip(
+          element,
+          'is-sleeping',
+          `${STATUS_ICON.sleeping} Minecraft Server - Sleeping (0 players online)`
+        );
+        setStatusTooltip(element, 'Server is idle and ready for players.');
       }
     } else {
       updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server -  Offline`);
