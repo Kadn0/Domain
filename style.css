@@ -85,6 +85,13 @@ body {
   line-height: 1.6;
 }
 
+.hero-quick-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
 .status-bar {
   display: flex;
   flex-wrap: wrap;
@@ -362,6 +369,12 @@ button.link-button,
   padding: 0.6rem 1.4rem;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn.small {
+  padding: 0.4rem 0.95rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .btn:focus-visible {
