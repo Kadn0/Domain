@@ -9,6 +9,24 @@ const STATUS_ICON = {
 };
 
 const MINECRAFT_HOST = 'serber.kadents.com';
+// Optional: set this to a deployed proxy URL (Cloudflare Worker, Vercel function, etc.)
+// Example: const PROXY_URL = 'https://your-worker.example.workers.dev';
+const PROXY_URL = null;
+
+// Public status APIs to try (in order). Some networks block specific domains,
+// so we try multiple providers before giving up.
+const PUBLIC_STATUS_APIS = [
+  (host) => `https://api.mcsrvstat.us/2/${host}`,
+  (host) => `https://api.mcstatus.io/v2/status/java/${host}`,
+  (host) => `https://eu.mcapi.us/server/status?ip=${host}`,
+];
+
+function fetchWithTimeout(url, opts = {}, timeout = 7000) {
+  return Promise.race([
+    fetch(url, opts),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout)),
+  ]);
+}
 const PLAYER_UUID_OVERRIDES = {
   '00000000-0000-0000-0000-000000000000': 'Kaden (Admin)',
 };
@@ -276,9 +294,37 @@ async function fetchMinecraftStatus(element) {
   updateStatusChip(element, null, 'Checking server status...');
   setStatusTooltip(element, null);
   try {
-    const response = await fetch(`https://api.mcsrvstat.us/2/${MINECRAFT_HOST}`, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Request failed with ${response.status}`);
-    const data = await response.json();
+    let data = null;
+
+    // 1) If a proxy URL is configured, try it first. The proxy should accept
+    //    a `host` query parameter and return the same JSON shape as mcsrvstat.
+    if (PROXY_URL) {
+      try {
+        const url = new URL(PROXY_URL);
+        url.searchParams.set('host', MINECRAFT_HOST);
+        const resp = await fetchWithTimeout(url.toString(), { cache: 'no-store' }, 8000);
+        if (resp.ok) data = await resp.json();
+      } catch (e) {
+        // proxy failed — continue to public APIs
+      }
+    }
+
+    // 2) Try a list of public status APIs until one returns usable data.
+    if (!data) {
+      for (const makeUrl of PUBLIC_STATUS_APIS) {
+        try {
+          const url = makeUrl(MINECRAFT_HOST);
+          const resp = await fetchWithTimeout(url, { cache: 'no-store' }, 7000);
+          if (!resp.ok) continue;
+          data = await resp.json();
+          if (data) break;
+        } catch (e) {
+          // try next API
+        }
+      }
+    }
+
+    if (!data) throw new Error('No status provider responded');
 
     if (data?.online) {
       const collectedNames = [];
