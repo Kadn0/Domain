@@ -8,7 +8,7 @@ const STATUS_ICON = {
   warning: "\u26A0\uFE0F", // ??
 };
 
-const MINECRAFT_HOST = 'mc.kadents.com';
+const MINECRAFT_HOST = 'serber.kadents.com';
 const PLAYER_UUID_OVERRIDES = {
   '00000000-0000-0000-0000-000000000000': 'Kaden (Admin)',
 };
