@@ -280,7 +280,7 @@ body {
   --icon-bg: linear-gradient(135deg, rgba(74, 98, 141, 0.7), rgba(139, 174, 197, 0.65));
 }
 
-\.service-card--amp {
+.service-card--amp {
   --icon-bg: linear-gradient(135deg, rgba(120, 199, 255, 0.7), rgba(78, 108, 255, 0.6));
 }
 .service-header h2 {

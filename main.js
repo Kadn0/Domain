@@ -186,7 +186,7 @@ function initBackground() {
     });
 
     ctx.globalCompositeOperation = 'source-over';
-    window.requestAnimationFrame(renderFrame);
+    rafId = window.requestAnimationFrame(renderFrame);
   }
 
   const onPointerMove = (event) => handlePointerMove(event.clientX, event.clientY);
@@ -200,14 +200,36 @@ function initBackground() {
     pointer.targetY = 0.5;
   };
 
+  let rafId = null;
+
+  function startLoop() {
+    if (rafId === null) {
+      rafId = window.requestAnimationFrame(renderFrame);
+    }
+  }
+
+  function stopLoop() {
+    if (rafId !== null) {
+      window.cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }
+
   resize();
-  window.requestAnimationFrame(renderFrame);
+  startLoop();
 
   window.addEventListener('resize', resize);
   window.addEventListener('pointermove', onPointerMove);
   window.addEventListener('pointerleave', resetPointer);
   window.addEventListener('touchmove', onTouchMove, { passive: true });
   window.addEventListener('touchend', resetPointer);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopLoop();
+    } else {
+      startLoop();
+    }
+  });
 }
 
 function updateStatusChip(element, statusClass, message) {
@@ -260,7 +282,7 @@ async function fetchMinecraftStatus(element) {
         setStatusTooltip(element, 'Server is idle (no players online).');
       }
     } else {
-      updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server -  Offline`);
+      updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server - Offline`);
       setStatusTooltip(element, null);
     }
   } catch (error) {
