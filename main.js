@@ -135,7 +135,7 @@ function initBackground() {
       speed: randomBetween(0.04, 0.11),
       radius: randomBetween(140, 340),
       orbit: randomBetween(140, 420),
-      hue: randomBetween(195, 215),
+      hue: randomBetween(250, 275),
       alpha: randomBetween(0.2, 0.42),
       offset: Math.random() * Math.PI * 2,
       wobble: randomBetween(0.35, 0.9),
@@ -179,7 +179,7 @@ function initBackground() {
     const seconds = time * 0.001;
 
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(3, 7, 18, 0.35)';
+    ctx.fillStyle = 'rgba(10, 5, 24, 0.35)';
     ctx.fillRect(0, 0, width, height);
 
     pointer.x += (pointer.targetX - pointer.x) * 0.05;
@@ -203,7 +203,7 @@ function initBackground() {
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
       gradient.addColorStop(0, `hsla(${orb.hue}, 95%, 65%, ${orb.alpha})`);
       gradient.addColorStop(0.45, `hsla(${orb.hue + 25}, 90%, 60%, ${orb.alpha * 0.7})`);
-      gradient.addColorStop(1, 'rgba(3, 9, 20, 0)');
+      gradient.addColorStop(1, 'rgba(10, 5, 24, 0)');
 
       ctx.fillStyle = gradient;
       ctx.beginPath();

@@ -4,7 +4,22 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Service Hub</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Modern browsers: crisp scalable SVG (auto-swaps to inverted on dark UI) -->
+  <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="/kadents-violet-inverted.svg" media="(prefers-color-scheme: dark)">
+
+  <!-- PNG fallbacks for older browsers -->
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+
+  <!-- iOS home screen -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+
+  <!-- PWA -->
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#5b21e6">
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
