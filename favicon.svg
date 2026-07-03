@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8f7ffb"/>
+      <stop offset="100%" stop-color="#5b21e6"/>
+    </linearGradient>
+    <linearGradient id="kFace" gradientUnits="userSpaceOnUse" x1="28" y1="24" x2="70" y2="80">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2d7ff"/>
+    </linearGradient>
+    <linearGradient id="ringFace" gradientUnits="userSpaceOnUse" x1="14" y1="66" x2="86" y2="34">
+      <stop offset="0%" stop-color="#f0e9ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#d3c4ff" stop-opacity="0.5"/>
+    </linearGradient>
+    <radialGradient id="orbFace" cx="34%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#e8ddff"/>
+      <stop offset="100%" stop-color="#b49bff"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+
+  <g transform="translate(50 50) scale(0.78) translate(-50 -50)">
+    <path d="M 85.2 35.8 A 38 16 -22 0 1 14.8 64.2"
+          fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+    <g fill="none" stroke="url(#kFace)"
+       stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M34,24 L34,76"/>
+      <path d="M34,51 L64,26"/>
+      <path d="M34,51 L66,77"/>
+    </g>
+    <path d="M 14.8 64.2 A 38 16 -22 0 1 85.2 35.8"
+          fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+    <circle cx="15.5" cy="63.5" r="7" fill="url(#orbFace)"/>
+    <circle cx="13" cy="61" r="1.9" fill="#ffffff" opacity="0.9"/>
+  </g>
+</svg>

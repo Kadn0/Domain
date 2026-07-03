@@ -1,17 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="kadentsMarkGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#8f7ffb"/>
-      <stop offset="100%" stop-color="#5b21e6"/>
+    <linearGradient id="kFace" gradientUnits="userSpaceOnUse" x1="28" y1="24" x2="70" y2="80">
+      <stop offset="0%" stop-color="#a394ff"/>
+      <stop offset="55%" stop-color="#7b5cf0"/>
+      <stop offset="100%" stop-color="#5721cf"/>
     </linearGradient>
-    <radialGradient id="kadentsMarkSphere" cx="35%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#c9bdff"/>
+    <linearGradient id="ringFace" gradientUnits="userSpaceOnUse" x1="14" y1="66" x2="86" y2="34">
+      <stop offset="0%" stop-color="#b4a3ff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#8b74f0" stop-opacity="0.4"/>
+    </linearGradient>
+    <radialGradient id="orbFace" cx="34%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#b9a5ff"/>
       <stop offset="100%" stop-color="#5b21e6"/>
     </radialGradient>
   </defs>
-  <ellipse cx="50" cy="50" rx="36" ry="15" transform="rotate(-18 50 50)" fill="none" stroke="url(#kadentsMarkGradient)" stroke-width="3"/>
-  <path d="M32,22 L32,78" fill="none" stroke="url(#kadentsMarkGradient)" stroke-width="10" stroke-linecap="round"/>
-  <path d="M32,50 L60,22" fill="none" stroke="url(#kadentsMarkGradient)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M32,50 L62,78" fill="none" stroke="url(#kadentsMarkGradient)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="77.3" cy="33.2" r="6.5" fill="url(#kadentsMarkSphere)"/>
+
+  <!-- orbit ring: far edge, behind the K -->
+  <path d="M 85.2 35.8 A 38 16 -22 0 1 14.8 64.2"
+        fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+
+  <!-- the K -->
+  <g fill="none" stroke="url(#kFace)"
+     stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34,24 L34,76"/>
+    <path d="M34,51 L64,26"/>
+    <path d="M34,51 L66,77"/>
+  </g>
+
+  <!-- orbit ring: near edge, in front of the K -->
+  <path d="M 14.8 64.2 A 38 16 -22 0 1 85.2 35.8"
+        fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+
+  <!-- electron sphere at the lower-left end of the orbit -->
+  <circle cx="15.5" cy="63.5" r="7" fill="url(#orbFace)"/>
+  <circle cx="13" cy="61" r="1.9" fill="#ffffff" opacity="0.85"/>
 </svg>

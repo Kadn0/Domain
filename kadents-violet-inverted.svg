@@ -1,13 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <radialGradient id="kadentsMarkSphereInverted" cx="35%" cy="30%" r="75%">
+    <linearGradient id="kFace" gradientUnits="userSpaceOnUse" x1="28" y1="24" x2="70" y2="80">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#d9d0ff"/>
+      <stop offset="100%" stop-color="#d4c4ff"/>
+    </linearGradient>
+    <linearGradient id="ringFace" gradientUnits="userSpaceOnUse" x1="14" y1="66" x2="86" y2="34">
+      <stop offset="0%" stop-color="#efe7ff" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#cdbcff" stop-opacity="0.45"/>
+    </linearGradient>
+    <radialGradient id="orbFace" cx="34%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#e8ddff"/>
+      <stop offset="100%" stop-color="#b49bff"/>
     </radialGradient>
   </defs>
-  <ellipse cx="50" cy="50" rx="36" ry="15" transform="rotate(-18 50 50)" fill="none" stroke="#ffffff" stroke-opacity="0.9" stroke-width="3"/>
-  <path d="M32,22 L32,78" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round"/>
-  <path d="M32,50 L60,22" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M32,50 L62,78" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="77.3" cy="33.2" r="6.5" fill="url(#kadentsMarkSphereInverted)"/>
+
+  <path d="M 85.2 35.8 A 38 16 -22 0 1 14.8 64.2"
+        fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+
+  <g fill="none" stroke="url(#kFace)"
+     stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34,24 L34,76"/>
+    <path d="M34,51 L64,26"/>
+    <path d="M34,51 L66,77"/>
+  </g>
+
+  <path d="M 14.8 64.2 A 38 16 -22 0 1 85.2 35.8"
+        fill="none" stroke="url(#ringFace)" stroke-width="4.4" stroke-linecap="round"/>
+
+  <circle cx="15.5" cy="63.5" r="7" fill="url(#orbFace)"/>
+  <circle cx="13" cy="61" r="1.9" fill="#ffffff" opacity="0.9"/>
 </svg>
