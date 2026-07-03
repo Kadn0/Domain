@@ -317,9 +317,9 @@ body {
 
 .launcher-logo {
   position: relative;
-  width: clamp(60px, 8vw, 78px);
+  width: clamp(66px, 8.5vw, 86px);
   height: auto;
-  filter: drop-shadow(0 8px 22px rgba(12, 5, 28, 0.55));
+  filter: drop-shadow(0 10px 26px rgba(12, 5, 28, 0.55));
 }
 
 .launcher-copy {
