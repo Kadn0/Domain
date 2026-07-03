@@ -85,13 +85,6 @@ body {
   line-height: 1.6;
 }
 
-.hero-quick-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
 .status-bar {
   display: flex;
   flex-wrap: wrap;
@@ -215,7 +208,50 @@ body {
 .services {
   display: grid;
   gap: clamp(1.4rem, 3vw, 1.75rem);
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .services {
+    animation: services-in 0.6s ease both;
+  }
+}
+
+@keyframes services-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Named placement only applies once a template defines these areas (>=620px);
+   below that the cards flow in DOM order as a single column. */
+@media (min-width: 620px) {
+  .service-card--jellyfin { grid-area: jellyfin; }
+  .service-card--seerr { grid-area: seerr; }
+  .service-card--synology { grid-area: synology; }
+  .service-card--minecraft { grid-area: minecraft; }
+  .launcher-card { grid-area: launcher; }
+}
+
+/* Tablet: launcher becomes a full-width banner above a 2x2 of cards. */
+@media (min-width: 620px) {
+  .services {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "launcher launcher"
+      "jellyfin seerr"
+      "synology minecraft";
+  }
+}
+
+/* Desktop: launcher sits in the middle of the four blocks. */
+@media (min-width: 960px) {
+  .services {
+    grid-template-columns: 1fr minmax(250px, 0.92fr) 1fr;
+    grid-template-areas:
+      "jellyfin launcher seerr"
+      "synology launcher minecraft";
+    align-items: stretch;
+  }
 }
 
 .service-card {
@@ -224,15 +260,108 @@ body {
   padding: clamp(1.45rem, 3.2vw, 2rem);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-card);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.35rem;
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Pin each card's action row to a common baseline so the grid reads evenly. */
+.service-card .service-body {
+  margin-top: auto;
 }
 
 .service-card:hover {
   transform: translateY(-6px);
   box-shadow: var(--shadow-card-hover);
   border-color: rgba(167, 139, 250, 0.35);
+}
+
+/* Central launcher — the gravitational hub the four services orbit. */
+.launcher-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.15rem;
+  padding: clamp(1.75rem, 3.5vw, 2.75rem);
+  border-radius: var(--radius-card);
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  background:
+    radial-gradient(circle at 50% 22%, rgba(196, 181, 253, 0.4), transparent 62%),
+    linear-gradient(160deg, rgba(124, 58, 237, 0.85), rgba(76, 29, 149, 0.92));
+  box-shadow:
+    0 30px 70px rgba(45, 15, 105, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.launcher-card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 38px 90px rgba(58, 20, 130, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.launcher-glow {
+  position: absolute;
+  inset: -30% 20% auto 20%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(216, 205, 255, 0.55), transparent 70%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.launcher-logo {
+  position: relative;
+  width: clamp(60px, 8vw, 78px);
+  height: auto;
+  filter: drop-shadow(0 8px 22px rgba(12, 5, 28, 0.55));
+}
+
+.launcher-copy {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.launcher-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(226, 219, 255, 0.75);
+}
+
+.launcher-card h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  line-height: 1.1;
+  color: #fff;
+}
+
+.launcher-card p {
+  margin: 0 auto;
+  max-width: 24ch;
+  color: rgba(233, 227, 255, 0.85);
+  line-height: 1.5;
+}
+
+.launcher-btn {
+  position: relative;
+  background: #fff;
+  color: #4c1d95;
+  font-weight: 700;
+  padding: 0.7rem 1.6rem;
+  box-shadow: 0 16px 34px rgba(12, 5, 28, 0.4);
+}
+
+.launcher-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 44px rgba(12, 5, 28, 0.5);
+  color: #5b21e6;
 }
 
 .service-header {
@@ -267,9 +396,6 @@ body {
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
 }
-
-
-
 
 .service-card--jellyfin {
   --icon-bg: linear-gradient(135deg, rgba(123, 53, 255, 0.7), rgba(61, 157, 255, 0.6));
@@ -415,12 +541,6 @@ button.link-button,
   box-shadow: 0 20px 45px rgba(255, 77, 77, 0.35);
 }
 
-@media (min-width: 1024px) {
-  .services {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 720px) {
   body {
     padding: clamp(1.25rem, 4vw, 1.75rem);
@@ -434,6 +554,11 @@ button.link-button,
     border-radius: calc(var(--radius-card) + 6px);
   }
 
+  .status-chip {
+    min-width: 0;
+    width: 100%;
+  }
+
   .service-actions {
     flex-direction: column;
   }
@@ -442,22 +567,3 @@ button.link-button,
     width: 100%;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
