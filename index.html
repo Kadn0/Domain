@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mode="eli5">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Service Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kadents</title>
+  <meta name="description" content="A map of Kaden's homelab, and the front door to its services." />
+  <!-- Hello, source reader. Some words do things when you type them on this page. -->
 
   <!-- Modern browsers: crisp scalable SVG (auto-swaps to inverted on dark UI) -->
   <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
@@ -18,142 +20,268 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#5b21e6">
+  <meta name="theme-color" content="#1d1e20">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <canvas id="background" aria-hidden="true"></canvas>
+  <div id="loader" class="loader" hidden>
+    <div class="loader-inner">
+      <span class="mono">KADENTS</span>
+      <button class="loader-bar" id="loaderBar" type="button" aria-label="Loading"><i id="loaderFill"></i></button>
+      <span class="mono" id="loaderPct">Loading 0%</span>
+    </div>
+  </div>
 
-  <main class="page" aria-labelledby="page-title">
-    <header class="hero">
-      <span class="hero-tag">Kadents Network</span>
-      <h1 id="page-title">Kaden's services at your fingertips</h1>
-      <p class="hero-lede">Stream with Jellyfin, request new media in Seerr, or hop into the Minecraft realm — every service one click away, no link hunting required.</p>
-    </header>
+  <header class="topbar">
+    <a class="topbar-mark mono" href="#top">KADENTS</a>
+    <div class="modes" role="group" aria-label="Reading version">
+      <button type="button" data-mode-btn="eli5">ELI5 <kbd>1</kbd></button>
+      <button type="button" data-mode-btn="tech">Technical <kbd>2</kbd></button>
+      <button type="button" data-mode-btn="comm">Commentary <kbd>3</kbd></button>
+    </div>
+    <nav class="topbar-links mono">
+      <a href="#services">Services</a>
+      <button type="button" id="eggBtn">Eggs 0/13</button>
+    </nav>
+  </header>
 
-    <section class="status-bar" aria-label="Live service health">
-      <div class="status-chip" id="nas-status" role="status" aria-live="polite">Checking NAS...</div>
-      <div class="status-chip" id="mc-status" role="status" aria-live="polite">Checking Minecraft server...</div>
+  <main id="top">
+    <section class="hero" aria-labelledby="title">
+      <div class="hero-copy">
+        <h1 id="title">KADENTS</h1>
+        <p class="mono hero-sub">A visual representation of my homelab and the services it runs</p>
+      </div>
+
+      <figure class="schematic" id="schematic">
+        <svg viewBox="0 0 560 372" role="img" aria-labelledby="schemTitle">
+          <title id="schemTitle">Map of the homelab: internet, Cloudflare, gateway, seven machines, and the services they run</title>
+          <g class="wires">
+            <path d="M33 22H96V48" />
+            <path d="M96 70V92" />
+            <path d="M530 102H542" />
+            <path d="M109 112V134M171 112V134M233 112V134M295 112V134M357 112V134M419 112V134M481 112V134" />
+            <path d="M109 190V212M171 190V212M233 190V212M295 190V212M357 190V212M419 190V212M481 190V212" />
+            <path d="M111 220V242M153 220V242M195 220V242M305 220V242M460 220V250" />
+          </g>
+          <g class="node" data-go="ch-02" data-label="Internet. Everything starts out here."><circle cx="22" cy="22" r="11" /></g>
+          <g class="node" data-go="ch-02" data-label="Cloudflare edge. The front door and its bouncer."><rect x="85" y="48" width="22" height="22" /></g>
+          <g class="node" data-go="ch-03" data-label="Gateway. Routing, firewall and addresses."><rect x="80" y="92" width="450" height="20" /></g>
+          <g class="node rogue" data-egg="rogue" data-label="Unknown device."><circle cx="546" cy="102" r="3.5" /></g>
+          <g class="node" data-go="ch-07" data-label="Desktop. The lab bench."><rect x="92" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-04" data-label="Media server. Runs the apps."><rect x="154" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-04" data-label="NAS. The big box of drives."><rect x="216" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-03" data-label="DNS Pi. Blocks ads for the whole house."><rect x="278" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-02" data-label="Services Pi. Small always-on helpers."><rect x="340" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-06" data-label="LED Pi. Drives the 64×64 matrix."><rect x="402" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-07" data-label="Radio Pi. Listens to the airwaves."><rect x="464" y="134" width="34" height="56" /></g>
+          <g class="node" data-go="ch-04" data-label="Bus. How the machines share work."><rect x="80" y="212" width="450" height="8" /></g>
+          <g class="node" data-go="ch-04" data-label="Jellyfin. Your own streaming service."><rect x="100" y="242" width="22" height="112" /></g>
+          <g class="node" data-go="ch-04" data-label="Seerr. The suggestion box."><rect x="142" y="242" width="22" height="112" /></g>
+          <g class="node" data-go="ch-05" data-label="Minecraft. A world that's always on." id="mcNode"><rect x="184" y="242" width="22" height="112" /></g>
+          <g class="node" data-go="ch-06" data-label="LED matrix. 4,096 tiny lights.">
+            <rect x="250" y="242" width="112" height="112" />
+            <path class="grid" d="M264 242V354M278 242V354M292 242V354M306 242V354M320 242V354M334 242V354M348 242V354M250 256H362M250 270H362M250 284H362M250 298H362M250 312H362M250 326H362M250 340H362" />
+          </g>
+          <g class="node" data-go="services" data-label="Launcher. Every service behind one door."><circle cx="460" cy="302" r="52" /></g>
+        </svg>
+        <figcaption class="mono" id="schemCap">Hover or tap a part of the map.</figcaption>
+      </figure>
     </section>
 
-    <section class="services" aria-label="Service catalog">
-      <article class="launcher-card" aria-labelledby="launcher-heading">
-        <span class="launcher-glow" aria-hidden="true"></span>
-        <img class="launcher-logo" src="/kadents-launcher.svg" alt="" aria-hidden="true" width="84" height="84" />
-        <div class="launcher-copy">
-          <span class="launcher-eyebrow">Single sign-on</span>
-          <h2 id="launcher-heading">Launcher</h2>
-          <p>Every Kadents service behind one secure door.</p>
-        </div>
-        <a class="btn launcher-btn" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open Launcher &rarr;</a>
-      </article>
+    <section class="services" id="services" aria-labelledby="services-title">
+      <div class="section-head mono"><span>00</span><span>Services</span></div>
+      <h2 id="services-title">Quick launch</h2>
 
-      <article class="service-card service-card--jellyfin" aria-labelledby="jellyfin-heading">
-        <header class="service-header">
-          <div class="service-title">
-            <span class="service-icon" aria-hidden="true">
-              <svg class="service-symbol" viewBox="0 0 24 24" role="presentation" xmlns="http://www.w3.org/2000/svg">
-                <path fill="currentColor" d="M12 .002C8.826.002-1.398 18.537.16 21.666c1.56 3.129 22.14 3.094 23.682 0C25.384 18.573 15.177 0 12 0zm7.76 18.949c-1.008 2.028-14.493 2.05-15.514 0C3.224 16.9 9.92 4.755 12.003 4.755c2.081 0 8.77 12.166 7.759 14.196zM12 9.198c-1.054 0-4.446 6.15-3.93 7.189.518 1.04 7.348 1.027 7.86 0 .511-1.027-2.874-7.19-3.93-7.19z" />
-              </svg>
-            </span>
-            <h2 id="jellyfin-heading">Jellyfin</h2>
-          </div>
-          <p>Stream media library and share collections with the Jellyfin dashboard.</p>
-        </header>
-        <div class="service-body">
-          <div class="service-actions">
-            <a class="btn primary" href="https://fin.kadents.com" target="_blank" rel="noopener">Open Jellyfin</a>
+      <div class="status-bar" aria-label="Live service health">
+        <div class="status-chip" id="nas-status" role="status" aria-live="polite" tabindex="0">Checking NAS...</div>
+        <div class="status-chip" id="mc-status" role="status" aria-live="polite" tabindex="0">Checking Minecraft server...</div>
+      </div>
+
+      <ul class="rows">
+        <li class="row row--launcher">
+          <div class="row-name"><strong>Launcher</strong><span class="mono">Single sign-on · every Kadents service behind one door</span></div>
+          <div class="row-actions"><a class="btn primary" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open Launcher &rarr;</a></div>
+        </li>
+        <li class="row">
+          <div class="row-name"><strong>Jellyfin</strong><span class="mono">fin.kadents.com</span></div>
+          <div class="row-actions">
+            <a class="btn primary" href="https://fin.kadents.com" target="_blank" rel="noopener">Open</a>
             <button class="btn ghost" type="button" data-copy="https://fin.kadents.com">Copy Link</button>
           </div>
-        </div>
-      </article>
-
-      <article class="service-card service-card--seerr" aria-labelledby="seerr-heading">
-        <header class="service-header">
-          <div class="service-title">
-            <span class="service-icon" aria-hidden="true">
-              <svg class="service-symbol" viewBox="0 0 96 96" role="presentation" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="52" cy="52" r="28" fill="#131928" />
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M48 96C74.5097 96 96 74.5097 96 48C96 21.4903 74.5097 0 48 0C21.4903 0 0 21.4903 0 48C0 74.5097 21.4903 96 48 96ZM80.0001 52C80.0001 67.464 67.4641 80 52.0001 80C36.5361 80 24.0001 67.464 24.0001 52C24.0001 49.1303 24.4318 46.3615 25.2338 43.7548C27.4288 48.6165 32.3194 52 38.0001 52C45.7321 52 52.0001 45.732 52.0001 38C52.0001 32.3192 48.6166 27.4287 43.755 25.2337C46.3616 24.4317 49.1304 24 52.0001 24C67.4641 24 80.0001 36.536 80.0001 52Z" fill="url(#osGradient)" />
-                <path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd" d="M80.0002 52C80.0002 67.464 67.4642 80 52.0002 80C36.864 80 24.5329 67.9897 24.017 52.9791C24.0057 53.318 24 53.6583 24 54C24 70.5685 37.4315 84 54 84C70.5685 84 84 70.5685 84 54C84 37.4315 70.5685 24 54 24C53.6597 24 53.3207 24.0057 52.9831 24.0169C67.9919 24.5347 80.0002 36.865 80.0002 52Z" fill="#131928" />
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M48 12C28.1177 12 12 28.1177 12 48C12 50.2091 10.2091 52 8 52C5.79086 52 4 50.2091 4 48C4 23.6995 23.6995 4 48 4C50.2091 4 52 5.79086 52 8C52 10.2091 50.2091 12 48 12Z" fill="url(#osHighlight)" />
-                <defs>
-                  <linearGradient id="osGradient" x1="48" y1="0" x2="117.5" y2="69.5" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#C395FC" />
-                    <stop offset="1" stop-color="#4F65F5" />
-                  </linearGradient>
-                  <linearGradient id="osHighlight" x1="28" y1="8" x2="28" y2="48" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="white" stop-opacity="0.4" />
-                    <stop offset="1" stop-color="white" stop-opacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </span>
-            <h2 id="seerr-heading">Seerr</h2>
-          </div>
-          <p>Request new shows or check download progress in the media queue.</p>
-        </header>
-        <div class="service-body">
-          <div class="service-actions">
-            <a class="btn primary" href="https://seerr.kadents.com" target="_blank" rel="noopener">Open Seerr</a>
+        </li>
+        <li class="row">
+          <div class="row-name"><strong>Seerr</strong><span class="mono">seerr.kadents.com</span></div>
+          <div class="row-actions">
+            <a class="btn primary" href="https://seerr.kadents.com" target="_blank" rel="noopener">Open</a>
             <button class="btn ghost" type="button" data-copy="https://seerr.kadents.com">Copy Link</button>
           </div>
-        </div>
-      </article>
-
-      <article class="service-card service-card--synology" aria-labelledby="synology-heading">
-        <header class="service-header">
-          <div class="service-title">
-            <span class="service-icon" aria-hidden="true">
-              <img class="service-symbol" src="https://cdn.simpleicons.org/synology/ffffff" alt="Synology logo" />
-            </span>
-            <h2 id="synology-heading">Synology</h2>
-          </div>
-          <p>Access the Synology DSM interface for storage management, packages, and QuickConnect services.</p>
-        </header>
-        <div class="service-body">
-          <div class="service-actions">
-            <a class="btn primary" href="https://kadn.quickconnect.to" target="_blank" rel="noopener">Open Synology</a>
+        </li>
+        <li class="row">
+          <div class="row-name"><strong>Synology</strong><span class="mono">kadn.quickconnect.to</span></div>
+          <div class="row-actions">
+            <a class="btn primary" href="https://kadn.quickconnect.to" target="_blank" rel="noopener">Open</a>
             <button class="btn ghost" type="button" data-copy="https://kadn.quickconnect.to">Copy Link</button>
           </div>
-        </div>
-      </article>
-      <article class="service-card service-card--minecraft" aria-labelledby="minecraft-heading">
-        <header class="service-header">
-          <div class="service-title">
-            <span class="service-icon" aria-hidden="true">
-              <svg class="service-symbol" viewBox="0 0 24 24" role="presentation" xmlns="http://www.w3.org/2000/svg">
-                <path fill="currentColor" d="M23.7397 10.0058l-2.4424.0023-.076.1198-.03-.1175h-2.4586l-.0599.136-.023-.136-2.4793.0023-.0438.1613-.0161-.1613-2.5023.0023-.023.265-.007-.265-2.5184.0046-.0092.242-.0254-.242-2.4954.0023-.016.1567-.0439-.1567H7.2673l-.0968.6705-.0553-.1382-.0254-.0024-.2096-.53-1.189.0024-.023.129-.0622-.129H4.431l-.03.1198-.0691-.1198-1.1659.0023-.136.523h-.3156l-.06.2282-.5506-.7512-1.1337.0023L0 13.0403l1.03.954h1.1244l.1774-.6706.0876.0968h.2995l.5.5737h1.1544l.023-.1082.0807.1082h1.1636l.0207-.1175.0737.1175h1.1751l.09-.629.3018.629h1.1889l.0138-.1451.0507.1451H11.03l.0093-.228.0276.228h2.4954l.023-.2511.0093.2511h1.2235l.0392-.175.0115.175h1.2097l.0506-.152.0139.152h1.1958l.0622-.1336.0185.1336h1.1843l.0714-.122.0208.122h1.175l.6798-.9677-.0323-.1544h.3756l.5346-.7396.4562 1.8594h1.152L24 13.0334l-.0184-.0737-.0738-.2535-.069-.2327s-.219-.712-.2466-.8065c-.0346-.1152-.0714-.2327-.1037-.3456l-.0046-.0184.4838-.583zm-2.325.1682h2.2005l.1567.493h-.6383l.0046.0162c.0254.1083.0554.2189.0853.3295.03.1129.0645.2258.0968.3433.0345.1152.069.235.106.3525.0368.1199.0737.2374.1083.3572.023.0737.0438.1451.0668.2189.023.0737.046.1497.0691.2235l.0692.228c.023.0761.0437.1522.0667.2282h-.9976l-.6268-2.2973h-.6405zm-.3548.0023l.1222.493h-1.295l.1175.56h1.3134l.136.553h-1.3342l.2466 1.182-.9954.0023-.5093-2.788zm-2.553.0023l.4816 2.788h-.9954l-.129-.8986h-.3733l.1221.8986h-.9954l-.3064-2.7857zm-2.5484.0023l.1037 1.0322h-.3272l.03.3111h.3272l.1451 1.4424h-.993l-.09-1.1751-.3686-.0092.076 1.1843h-.993l-.1037-2.7834zm-2.546.0023l.0138.493h-1.272l-.0299 1.719h1.3503l.016.5737h-2.364l.0945-2.7834zm-2.5438.0023l-.0208.493H9.56l-.0415.5692 1.3042.0023-.023.5369-1.3296.0023-.0437.6014 1.3456.0045-.0253.5738H8.387l.2926-2.7811zm-2.5392.0023l-.3226 2.781h-.9908l.1245-.8847-.3273-.0092.083-.5737-.3594-.007-.235 1.477H5.311l.5184-2.7811h.917l-.0806.5138.3157.0092-.076.5369.3548.0046L7.41 10.19zm-5.0346.0046h.9171l-.6475 2.7788h-.9884l.2972-1.1797H2.516l-.1543.5737h-.6406l.159-.5737h-.3595l-.3502 1.1797h-.97l.8917-2.7765h.8986l-.1475.5046.3134.0115L2 11.257h.6959l.1451-.5391h.318zm2.182.0046l-.546 2.7811h-.9885l.6175-2.7788z" />
-              </svg>
-            </span>
-            <h2 id="minecraft-heading">Minecraft</h2>
-          </div>
-          <p>Jump into the Kadents Java or Bedrock worlds and collaborate in real-time.</p>
-        </header>
-        <div class="service-body">
-          <dl class="service-meta">
-            <div>
-              <dt>Java Server</dt>
-              <dd><button class="service-link link-button" type="button" data-copy="mc.kadents.com">mc.kadents.com</button></dd>
-            </div>
-            <div>
-              <dt>Bedrock</dt>
-              <dd><button class="service-link link-button" type="button" data-copy="play.kadents.com">play.kadents.com</button></dd>
-            </div>
-          </dl>
-          <div class="service-actions">
+        </li>
+        <li class="row">
+          <div class="row-name"><strong>Minecraft</strong><span class="mono">Java mc.kadents.com · Bedrock play.kadents.com</span></div>
+          <div class="row-actions">
             <button class="btn primary" type="button" data-copy="mc.kadents.com">Copy Java Address</button>
             <button class="btn ghost" type="button" data-copy="play.kadents.com">Copy Bedrock Address</button>
           </div>
-        </div>
-      </article>
+        </li>
+      </ul>
     </section>
+
+    <article class="chapter" id="ch-01">
+      <div class="section-head mono"><span>01</span><span>Introduction</span></div>
+      <h2>A homelab, drawn as a map</h2>
+      <div class="v v-eli5">
+        <p>A homelab is a handful of computers at home doing jobs people usually rent from big companies: storing files, streaming movies, running a game server.</p>
+        <p>This page is a map of mine. Each shape above is one machine or service, and the lines show how they connect. Tap a part of the map, or keep scrolling.</p>
+      </div>
+      <div class="v v-tech">
+        <p>A small self-hosted stack: a Windows workstation, an Ubuntu server, a Synology NAS and a set of Raspberry Pis behind one gateway.</p>
+        <dl class="facts mono">
+          <div><dt>Ingress</dt><dd>Cloudflare Tunnel, no inbound port forwards</dd></div>
+          <div><dt>Auth</dt><dd>Cloudflare Access single sign-on</dd></div>
+          <div><dt>This page</dt><dd>Static HTML on GitHub Pages; status checks run in your browser</dd></div>
+        </dl>
+      </div>
+      <div class="v v-comm">
+        <p>I'm a cyber security analyst, and this is where I practice. Most of it started as "I wonder if I can host that myself," and a surprising amount of it worked.</p>
+        <p>Some of it broke at 2 a.m. That's part of it too.</p>
+      </div>
+    </article>
+
+    <article class="chapter" id="ch-02">
+      <div class="section-head mono"><span>02</span><span>The front door</span></div>
+      <h2>One door, checked by a bouncer</h2>
+      <div class="v v-eli5">
+        <p>Before anyone reaches a service, they come through one front door. A bouncer at that door checks who you are.</p>
+        <p>If you're on the list, you get in. If you're not, you never even see what's inside.</p>
+      </div>
+      <div class="v v-tech">
+        <p>Cloudflare Tunnel connects outbound from inside the network, so nothing listens on the home IP. Cloudflare Access puts single sign-on in front of each private app, and the Launcher lists every app a signed-in user may open.</p>
+        <dl class="facts mono">
+          <div><dt>Path</dt><dd>Browser &rarr; Cloudflare edge &rarr; Access policy &rarr; tunnel &rarr; app</dd></div>
+          <div><dt>Domain</dt><dd>DNSSEC on, DMARC enforced</dd></div>
+        </dl>
+      </div>
+      <div class="v v-comm">
+        <p>The tunnel was the moment this stopped feeling scary. Nothing is exposed at home, and I can still reach everything from anywhere.</p>
+      </div>
+      <p><a class="btn ghost" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open the Launcher &rarr;</a></p>
+    </article>
+
+    <article class="chapter" id="ch-03">
+      <div class="section-head mono"><span>03</span><span>The network</span></div>
+      <h2>Quiet traffic control</h2>
+      <div class="v v-eli5">
+        <p>Every device at home asks for directions before it goes anywhere online. A tiny computer answers those questions, and it refuses to give directions to ads and trackers.</p>
+      </div>
+      <div class="v v-tech">
+        <p>The gateway handles routing and DHCP. DNS goes to Pi-hole, which forwards to Unbound as a local recursive resolver. Lookups don't depend on a third-party DNS provider, and ad and tracker domains are blocked for every device on the network.</p>
+        <dl class="facts mono">
+          <div><dt>Query</dt><dd>Device &rarr; Pi-hole &rarr; Unbound &rarr; root servers</dd></div>
+        </dl>
+      </div>
+      <div class="v v-comm">
+        <p>The day I turned on network-wide blocking, everything in the house got faster. Nobody noticed, which is exactly how infrastructure should work.</p>
+      </div>
+    </article>
+
+    <article class="chapter" id="ch-04">
+      <div class="section-head mono"><span>04</span><span>Media</span></div>
+      <h2>Movie night that never buffers</h2>
+      <div class="v v-eli5">
+        <p>The NAS is a big box of hard drives. Jellyfin turns what's on it into your own streaming service, and Seerr is the suggestion box where you ask for something new.</p>
+      </div>
+      <div class="v v-tech">
+        <p>Media lives on the Synology NAS. Jellyfin serves libraries and playback; Seerr takes requests and shows their progress. The NAS status chip checks Jellyfin's health endpoint from your browser.</p>
+      </div>
+      <div class="v v-comm">
+        <p>This is the part my friends actually use. They don't care how it works. They care that it works.</p>
+      </div>
+      <p><a class="btn ghost" href="#services">Go to Jellyfin and Seerr &rarr;</a></p>
+    </article>
+
+    <article class="chapter" id="ch-05">
+      <div class="section-head mono"><span>05</span><span>Minecraft</span></div>
+      <h2>A world that's always on</h2>
+      <div class="v v-eli5">
+        <p>A computer at home runs a Minecraft world all day. Friends can join from a PC, a phone or a console.</p>
+      </div>
+      <div class="v v-tech">
+        <p>One server takes both Java Edition and Bedrock Edition players. The status line asks three public server-status APIs in turn, then lists who's online.</p>
+        <dl class="facts mono">
+          <div><dt>Java</dt><dd><button class="link-button" type="button" data-copy="mc.kadents.com">mc.kadents.com</button></dd></div>
+          <div><dt>Bedrock</dt><dd><button class="link-button" type="button" data-copy="play.kadents.com">play.kadents.com</button></dd></div>
+        </dl>
+      </div>
+      <div class="v v-comm">
+        <p>Running a game server for friends taught me more about uptime than any class did.</p>
+      </div>
+    </article>
+
+    <article class="chapter chapter--figure" id="ch-06">
+      <div class="chapter-text">
+        <div class="section-head mono"><span>06</span><span>LED dashboard</span></div>
+        <h2>A 64×64 window into the lab</h2>
+        <div class="v v-eli5">
+          <p>A board of 4,096 tiny lights hangs on the wall and shows the time and whatever else I tell it to. The one here is a copy you can poke.</p>
+        </div>
+        <div class="v v-tech">
+          <p>A 64×64 HUB75 RGB matrix driven by a Raspberry Pi 4. It renders clocks, scrolling text and status panels. The version on this page is a software copy drawn on a canvas.</p>
+        </div>
+        <div class="v v-comm">
+          <p>My favorite project. It's useless in the best way.</p>
+        </div>
+      </div>
+      <figure class="led">
+        <canvas id="led" width="320" height="320" aria-label="Simulated LED matrix. Click to change what it shows."></canvas>
+        <figcaption class="mono">Click to change mode</figcaption>
+      </figure>
+    </article>
+
+    <article class="chapter" id="ch-07">
+      <div class="section-head mono"><span>07</span><span>The lab bench</span></div>
+      <h2>Breaking things on purpose</h2>
+      <div class="v v-eli5">
+        <p>Security people learn by trying to break things, safely, on their own equipment. This is the corner of the lab where I do that, including testing whether AI chatbots can be tricked.</p>
+      </div>
+      <div class="v v-tech">
+        <p>Vulnerability scanning of my own hosts and images, plus an LLM Scanner: a Gradio front end that runs garak, Promptfoo and PyRIT against local models to probe for prompt injection and jailbreaks. A software-defined radio Pi listens to the airwaves.</p>
+      </div>
+      <div class="v v-comm">
+        <p>Studying for Network+ and Security+ goes a lot faster when there's something real to poke at.</p>
+      </div>
+    </article>
   </main>
 
+  <footer class="footer mono">
+    <span>KADENTS v3.0.0</span>
+    <button type="button" class="counter" id="counter">Visitor <b id="digits">000000</b></button>
+    <button type="button" id="adminLink">/admin</button>
+    <span>&copy; 2025&ndash;2026 Kaden</span>
+  </footer>
+
+  <form class="console mono" id="console" hidden>
+    <label for="cmd">&gt;</label>
+    <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a word">
+  </form>
+
+  <div id="toasts" class="toasts mono" aria-live="polite"></div>
+  <div id="modal" class="modal" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+  <div id="plugin" class="plugin" hidden><div class="piece">?</div><p>This plugin isn't supported.</p></div>
+  <div id="saver" class="saver" hidden><span id="saverText" class="mono">KADENTS</span></div>
+  <svg id="dog" class="dog" viewBox="0 0 60 40" hidden aria-hidden="true"><path d="M8 26C8 18 14 16 22 16H40L46 8L50 10L52 6L54 14C56 16 56 20 52 22H46L44 26M10 26L8 36M18 26L16 36M38 24L40 36M44 26L46 36M8 22L2 14" /><circle cx="51" cy="13" r="1" /></svg>
+
   <script type="module" src="main.js"></script>
+  <script type="module" src="site.js"></script>
 </body>
 </html>
-
-
-

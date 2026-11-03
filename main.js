@@ -2,10 +2,10 @@ const RESTORE_DELAY = 2000;
 const STATUS_REFRESH_INTERVAL = 60000;
 
 const STATUS_ICON = {
-  online: "\u{1F7E2}", // ??
-  sleeping: "\u{1F7E0}", // ??
-  offline: "\u{1F534}", // ??
-  warning: "\u26A0\uFE0F", // ??
+  online: '●',
+  sleeping: '◐',
+  offline: '○',
+  warning: '!',
 };
 
 const MINECRAFT_HOST = 'serber.kadents.com';
@@ -115,125 +115,6 @@ function renderCopyFeedback(element, status) {
   window.setTimeout(() => {
     delete element.dataset.status;
   }, RESTORE_DELAY);
-}
-
-function initBackground() {
-  const canvas = document.getElementById('background');
-  if (!(canvas instanceof HTMLCanvasElement)) return;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  let orbs = [];
-  const pointer = { x: 0.5, y: 0.5, targetX: 0.5, targetY: 0.5 };
-  let width = 0;
-  let height = 0;
-
-  function buildOrbs(count) {
-    const randomBetween = (min, max) => min + Math.random() * (max - min);
-    return Array.from({ length: count }, () => ({
-      speed: randomBetween(0.04, 0.11),
-      radius: randomBetween(140, 340),
-      orbit: randomBetween(140, 420),
-      hue: randomBetween(250, 275),
-      alpha: randomBetween(0.2, 0.42),
-      offset: Math.random() * Math.PI * 2,
-      wobble: randomBetween(0.35, 0.9),
-    }));
-  }
-
-  function desiredOrbCount() {
-    return window.matchMedia('(min-width: 1024px)').matches ? 24 : 16;
-  }
-
-  function syncOrbCount() {
-    const nextCount = desiredOrbCount();
-    if (orbs.length !== nextCount) {
-      orbs = buildOrbs(nextCount);
-    }
-  }
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    syncOrbCount();
-  }
-
-  function clamp01(value) {
-    return Math.min(1, Math.max(0, value));
-  }
-
-  function handlePointerMove(clientX, clientY) {
-    if (!width || !height) return;
-    pointer.targetX = clamp01(clientX / width);
-    pointer.targetY = clamp01(clientY / height);
-  }
-
-  function renderFrame(time) {
-    const seconds = time * 0.001;
-
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = 'rgba(10, 5, 24, 0.35)';
-    ctx.fillRect(0, 0, width, height);
-
-    pointer.x += (pointer.targetX - pointer.x) * 0.05;
-    pointer.y += (pointer.targetY - pointer.y) * 0.05;
-
-    const pointerOffsetX = (pointer.x - 0.5) * 180;
-    const pointerOffsetY = (pointer.y - 0.5) * 120;
-
-    ctx.globalCompositeOperation = 'lighter';
-
-    orbs.forEach((orb, index) => {
-      const angle = orb.offset + seconds * orb.speed * Math.PI * 2;
-      const wobble = (Math.sin(seconds * 0.6 + index) + 1) * 0.5;
-
-      const baseX = width * 0.5;
-      const baseY = height * 0.42;
-      const x = baseX + Math.cos(angle) * (orb.orbit + pointerOffsetX * 0.4);
-      const y = baseY + Math.sin(angle) * (orb.orbit * 0.5) + pointerOffsetY;
-      const radius = orb.radius * (0.35 + wobble * orb.wobble);
-
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      gradient.addColorStop(0, `hsla(${orb.hue}, 95%, 65%, ${orb.alpha})`);
-      gradient.addColorStop(0.45, `hsla(${orb.hue + 25}, 90%, 60%, ${orb.alpha * 0.7})`);
-      gradient.addColorStop(1, 'rgba(10, 5, 24, 0)');
-
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    });
-
-    ctx.globalCompositeOperation = 'source-over';
-    window.requestAnimationFrame(renderFrame);
-  }
-
-  const onPointerMove = (event) => handlePointerMove(event.clientX, event.clientY);
-  const onTouchMove = (event) => {
-    if (event.touches.length === 0) return;
-    const touch = event.touches[0];
-    handlePointerMove(touch.clientX, touch.clientY);
-  };
-  const resetPointer = () => {
-    pointer.targetX = 0.5;
-    pointer.targetY = 0.5;
-  };
-
-  resize();
-  window.requestAnimationFrame(renderFrame);
-
-  window.addEventListener('resize', resize);
-  window.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerleave', resetPointer);
-  window.addEventListener('touchmove', onTouchMove, { passive: true });
-  window.addEventListener('touchend', resetPointer);
 }
 
 function updateStatusChip(element, statusClass, message) {
@@ -446,6 +327,5 @@ function initStatusChecks() {
   }
 }
 
-initBackground();
 initCopyControls();
 initStatusChecks();

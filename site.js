@@ -1,0 +1,468 @@
+// Page behaviour that isn't status or copy: reading versions, the map, the LED matrix and the Easter eggs.
+const $ = (id) => document.getElementById(id);
+const root = document.documentElement;
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const store = {
+  get(key, fallback, area = 'localStorage') {
+    try {
+      const value = window[area].getItem(key);
+      return value === null ? fallback : JSON.parse(value);
+    } catch (error) {
+      return fallback;
+    }
+  },
+  set(key, value, area = 'localStorage') {
+    try {
+      window[area].setItem(key, JSON.stringify(value));
+    } catch (error) {
+      // storage blocked; nothing to remember
+    }
+  },
+};
+
+// ---------- Toasts ----------
+function toast(message, isEgg = false) {
+  const box = $('toasts');
+  const el = document.createElement('div');
+  el.className = isEgg ? 'toast egg' : 'toast';
+  el.textContent = message;
+  box.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+  while (box.children.length > 3) box.firstElementChild.remove();
+}
+
+// ---------- Eggs ----------
+const EGGS = {
+  loading: ['Impatient', 'Pushed the loading bar past 99%.', 'Loading bars respond to encouragement.'],
+  konami: ['RGB Edition', 'Entered the old code.', 'Up, up, down, down...'],
+  finley: ['Good Boy', 'Let the dog out.', "Type the name of the lab's best boy."],
+  sudo: ['Not in the Sudoers File', 'Asked for root.', 'Type the word admins put in front of everything.'],
+  creeper: ['Aww Man', 'Summoned a creeper.', 'Type the name of the green thing that hisses.'],
+  led: ['Lit Up', 'Turned the title into LEDs.', 'Type the three letters from chapter 06.'],
+  plasma: ['Hidden Mode', "Found the matrix's secret mode.", 'The LED matrix has more modes than it admits.'],
+  ping: ['Pong', 'Pinged the NAS by hand.', 'Status chips like attention.'],
+  idle: ['Screensaver', 'Left the page alone long enough.', 'Walk away for a minute.'],
+  rogue: ['Rogue Device', 'Found the unknown device on the map.', 'Not everything on the map is labeled.'],
+  flash: ['Plugin Required', 'Typed the forbidden word.', 'Type the plugin every old website needed.'],
+  four: ['Version 4', "Asked for a version that doesn't exist.", 'There are three versions. Or are there?'],
+  honeypot: ['Honeypot', 'Tried to log in as admin.', 'Every site has an admin page.'],
+};
+const TOTAL = Object.keys(EGGS).length;
+const found = new Set(store.get('kd-eggs', []).filter((key) => key in EGGS));
+const eggBtn = $('eggBtn');
+
+function paintEggs() {
+  eggBtn.textContent = `Eggs ${found.size}/${TOTAL}`;
+  root.classList.toggle('root', found.size === TOTAL);
+}
+
+function egg(key) {
+  if (found.has(key)) return;
+  found.add(key);
+  store.set('kd-eggs', [...found]);
+  paintEggs();
+  toast(`${EGGS[key][0]} (${found.size}/${TOTAL})`, true);
+  if (found.size === TOTAL) window.setTimeout(() => toast(`root access granted. All ${TOTAL} found.`, true), 1200);
+}
+
+// ---------- Modal ----------
+const modal = $('modal');
+const card = $('card');
+let lastFocus = null;
+
+function openModal(html) {
+  lastFocus = document.activeElement;
+  card.innerHTML = html;
+  modal.hidden = false;
+  (card.querySelector('input, [data-close]') || card).focus();
+}
+
+function closeModal() {
+  modal.hidden = true;
+  if (lastFocus instanceof HTMLElement) lastFocus.focus();
+}
+
+modal.addEventListener('click', (event) => {
+  if (event.target === modal || event.target.closest('[data-close]')) closeModal();
+  if (event.target.closest('[data-reset]')) {
+    found.clear();
+    store.set('kd-eggs', []);
+    paintEggs();
+    closeModal();
+    toast('Egg log cleared.');
+  }
+});
+
+eggBtn.addEventListener('click', () => {
+  const items = Object.entries(EGGS)
+    .map(([key, [name, done, hint]]) =>
+      found.has(key)
+        ? `<li class="got"><span><b>${name}</b><small>${done}</small></span></li>`
+        : `<li><span><b>???</b><small>${hint}</small></span></li>`
+    )
+    .join('');
+  openModal(`<h3>Eggs ${found.size}/${TOTAL}</h3>
+    <p class="mono">On a phone? Triple-tap the KADENTS title to type words.</p>
+    <ul class="eggs">${items}</ul>
+    <div class="card-actions"><button class="btn ghost" type="button" data-reset>Clear log</button><button class="btn primary" type="button" data-close>Close</button></div>`);
+});
+
+// ---------- Reading versions ----------
+const MODES = ['eli5', 'tech', 'comm'];
+function setMode(mode) {
+  root.dataset.mode = mode;
+  document.querySelectorAll('[data-mode-btn]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.modeBtn === mode));
+  });
+  store.set('kd-mode', mode);
+}
+document.querySelectorAll('[data-mode-btn]').forEach((button) => {
+  button.addEventListener('click', () => setMode(button.dataset.modeBtn));
+});
+const savedMode = store.get('kd-mode', 'eli5');
+setMode(MODES.includes(savedMode) ? savedMode : 'eli5');
+
+// ---------- Map ----------
+const caption = $('schemCap');
+const defaultCaption = caption.textContent;
+document.querySelectorAll('.schematic .wires path, .schematic .node').forEach((el, i) => el.style.setProperty('--i', i));
+document.querySelectorAll('.schematic .node').forEach((node) => {
+  node.setAttribute('tabindex', '0');
+  node.setAttribute('role', node.dataset.egg ? 'button' : 'link');
+  node.setAttribute('aria-label', node.dataset.label);
+  const show = () => { caption.textContent = node.dataset.label; };
+  const hide = () => { caption.textContent = defaultCaption; };
+  const go = () => {
+    if (node.dataset.egg === 'rogue') {
+      caption.textContent = 'Unknown device. Investigating... it is the smart fridge. Again.';
+      egg('rogue');
+      return;
+    }
+    const target = $(node.dataset.go);
+    if (target) target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  };
+  node.addEventListener('pointerenter', show);
+  node.addEventListener('pointerleave', hide);
+  node.addEventListener('focus', show);
+  node.addEventListener('blur', hide);
+  node.addEventListener('click', go);
+  node.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      go();
+    }
+  });
+});
+
+// ---------- Loader (once per browser session) ----------
+(function loader() {
+  if (store.get('kd-loaded', false, 'sessionStorage')) return;
+  store.set('kd-loaded', true, 'sessionStorage');
+  const el = $('loader');
+  const fill = $('loaderFill');
+  const pct = $('loaderPct');
+  let value = 0;
+  let stalled = false;
+  let done = false;
+  let stallTimer = 0;
+  el.hidden = false;
+
+  const set = (v) => {
+    value = v;
+    fill.style.width = `${v}%`;
+    pct.textContent = `Loading ${Math.floor(v)}%`;
+  };
+  const finish = () => {
+    if (done) return;
+    done = true;
+    window.clearTimeout(stallTimer);
+    set(100);
+    window.setTimeout(() => { el.hidden = true; }, 200);
+  };
+  const tick = () => {
+    if (done) return;
+    set(Math.min(99, value + 3 + Math.random() * 6));
+    if (value >= 99) {
+      stalled = true;
+      pct.textContent = 'Loading 99%';
+      stallTimer = window.setTimeout(finish, 1500);
+      return;
+    }
+    window.setTimeout(tick, 40);
+  };
+  tick();
+
+  $('loaderBar').addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (stalled && !done) {
+      egg('loading');
+      finish();
+    }
+  });
+  el.addEventListener('click', finish);
+})();
+
+// ---------- Words and keys ----------
+const KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+let recentKeys = [];
+let typed = '';
+
+const WORDS = {
+  finley() {
+    const dog = $('dog');
+    dog.hidden = false;
+    dog.style.animation = 'none';
+    void dog.getBoundingClientRect();
+    dog.style.animation = '';
+    toast('Finley got loose. Good boy.');
+    egg('finley');
+  },
+  sudo() {
+    toast('kadn is not in the sudoers file. This incident will be reported.');
+    egg('sudo');
+  },
+  creeper() {
+    toast('Ssssss...');
+    window.setTimeout(() => {
+      [$('ch-05'), $('mcNode')].forEach((el) => {
+        el.classList.remove('boom');
+        void el.getBoundingClientRect();
+        el.classList.add('boom');
+      });
+      toast('Aww man.');
+      egg('creeper');
+    }, 1200);
+  },
+  led() {
+    $('title').classList.toggle('led-type');
+    egg('led');
+  },
+  flash() {
+    const plugin = $('plugin');
+    if (!plugin.hidden) return;
+    plugin.hidden = false;
+    window.setTimeout(() => {
+      plugin.hidden = true;
+      toast('Kidding. This site never needed it.');
+      egg('flash');
+    }, 2200);
+  },
+  uuddlrlrba: konami,
+};
+
+function konami() {
+  root.classList.toggle('rgb');
+  toast(root.classList.contains('rgb') ? 'RGB mode. Every homelab needs RGB.' : 'RGB off. Back to business.');
+  egg('konami');
+}
+
+function checkWords(text) {
+  const hit = Object.keys(WORDS).find((word) => text.endsWith(word));
+  if (hit) WORDS[hit]();
+  return Boolean(hit);
+}
+
+$('dog').addEventListener('animationend', () => { $('dog').hidden = true; });
+document.querySelectorAll('#ch-05, #mcNode').forEach((el) => el.addEventListener('animationend', () => el.classList.remove('boom')));
+
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !modal.hidden) {
+    closeModal();
+    return;
+  }
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.target instanceof Element && event.target.closest('input, textarea, select')) return;
+  if (!modal.hidden) return;
+  const key = event.key.toLowerCase();
+
+  recentKeys = [...recentKeys, key].slice(-KONAMI.length);
+  if (recentKeys.join() === KONAMI.join()) {
+    recentKeys = [];
+    konami();
+  }
+  if (key === '1' || key === '2' || key === '3') setMode(MODES[Number(key) - 1]);
+  if (key === '4') {
+    toast('There is no version 4. Yet.');
+    egg('four');
+  }
+  if (/^[a-z]$/.test(key)) {
+    typed = (typed + key).slice(-12);
+    if (checkWords(typed)) typed = '';
+  }
+});
+
+$('title').addEventListener('click', (event) => {
+  if (event.detail !== 3) return;
+  $('console').hidden = false;
+  $('cmd').focus();
+});
+$('console').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const value = $('cmd').value.toLowerCase().replace(/[^a-z]/g, '');
+  $('cmd').value = '';
+  if (value && !checkWords(value)) toast(`Unknown command: ${value.slice(0, 20)}`);
+});
+
+// ---------- Ping ----------
+let pings = 0;
+let pingTimer = 0;
+$('nas-status').addEventListener('click', () => {
+  pings += 1;
+  window.clearTimeout(pingTimer);
+  pingTimer = window.setTimeout(() => { pings = 0; }, 2000);
+  if (pings === 5) {
+    pings = 0;
+    toast('PING fin.kadents.com ... PONG');
+    egg('ping');
+  }
+});
+
+// ---------- Honeypot ----------
+$('adminLink').addEventListener('click', () => {
+  openModal(`<h3>Admin panel</h3>
+    <form id="honey" style="display:grid;gap:12px">
+      <label>Username<input name="u" autocomplete="off" spellcheck="false"></label>
+      <label>Passphrase<input name="p" type="password" autocomplete="off"></label>
+      <p class="mono" id="honeyMsg" hidden></p>
+      <div class="card-actions"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn primary" type="submit">Log in</button></div>
+    </form>`);
+  $('honey').addEventListener('submit', (event) => {
+    event.preventDefault();
+    event.target.reset(); // nothing typed here is kept or sent
+    const msg = $('honeyMsg');
+    msg.hidden = false;
+    msg.textContent = "Access denied. This attempt has been logged. (It hasn't. Nothing you typed left this page.)";
+    egg('honeypot');
+  });
+});
+
+// ---------- Visitor counter ----------
+const visits = store.get('kd-visits', 0) + 1;
+store.set('kd-visits', visits);
+$('digits').textContent = String(4810 + visits).padStart(6, '0');
+$('counter').addEventListener('click', () => toast('You are a very important visitor.'));
+
+// ---------- Idle screensaver ----------
+const saver = $('saver');
+const saverText = $('saverText');
+let idleTimer = 0;
+let saverFrame = 0;
+
+function startSaver() {
+  if (!modal.hidden) return resetIdle();
+  saver.hidden = false;
+  const pos = { x: 40, y: 40, dx: 1.6, dy: 1.2 };
+  const colors = ['#8b6cff', '#7fd6a4', '#e6b56a', '#e8857a', '#e8e6e1'];
+  let c = 0;
+  const step = () => {
+    const maxX = window.innerWidth - saverText.offsetWidth;
+    const maxY = window.innerHeight - saverText.offsetHeight;
+    pos.x += pos.dx;
+    pos.y += pos.dy;
+    if (pos.x <= 0 || pos.x >= maxX) { pos.dx *= -1; c += 1; }
+    if (pos.y <= 0 || pos.y >= maxY) { pos.dy *= -1; c += 1; }
+    pos.x = Math.max(0, Math.min(maxX, pos.x));
+    pos.y = Math.max(0, Math.min(maxY, pos.y));
+    saverText.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    saverText.style.color = colors[c % colors.length];
+    saverFrame = window.requestAnimationFrame(step);
+  };
+  step();
+}
+
+function resetIdle() {
+  if (!saver.hidden) {
+    saver.hidden = true;
+    window.cancelAnimationFrame(saverFrame);
+    toast('Welcome back.');
+    egg('idle');
+  }
+  window.clearTimeout(idleTimer);
+  idleTimer = window.setTimeout(startSaver, 60000);
+}
+['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach((type) =>
+  window.addEventListener(type, resetIdle, { passive: true })
+);
+resetIdle();
+
+// ---------- LED matrix ----------
+(function led() {
+  const canvas = $('led');
+  const ctx = canvas.getContext('2d');
+  const off = document.createElement('canvas');
+  off.width = 64;
+  off.height = 64;
+  const octx = off.getContext('2d', { willReadFrequently: true });
+  const DOT = canvas.width / 64;
+  const MESSAGE = 'KADENTS NETWORK  *  HOMELAB ONLINE  *  ';
+  let mode = 0; // 0 clock, 1 scroller, 2 plasma (hidden)
+  let scroll = 64;
+  let last = 0;
+
+  canvas.addEventListener('click', () => {
+    mode = (mode + 1) % 3;
+    if (mode === 2) egg('plasma');
+  });
+
+  function textFrame(now) {
+    octx.fillStyle = '#000';
+    octx.fillRect(0, 0, 64, 64);
+    octx.textBaseline = 'middle';
+    if (mode === 0) {
+      const d = new Date();
+      const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      octx.textAlign = 'center';
+      octx.fillStyle = '#8b6cff';
+      octx.font = 'bold 17px monospace';
+      octx.fillText(hm, 32, 26);
+      octx.fillStyle = '#e6b56a';
+      octx.font = 'bold 9px monospace';
+      octx.fillText(d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }).toUpperCase(), 32, 44);
+      // seconds bar along the bottom edge
+      octx.fillStyle = '#7fd6a4';
+      octx.fillRect(2, 58, Math.round((d.getSeconds() / 59) * 60), 2);
+    } else {
+      octx.textAlign = 'left';
+      octx.fillStyle = '#5fd3e8';
+      octx.font = 'bold 14px monospace';
+      octx.fillText(MESSAGE, scroll, 32);
+      const width = octx.measureText(MESSAGE).width;
+      scroll -= 1;
+      if (scroll < -width) scroll = 64;
+    }
+    return octx.getImageData(0, 0, 64, 64).data;
+  }
+
+  function draw(now) {
+    window.requestAnimationFrame(draw);
+    if (now - last < 50) return;
+    last = now;
+    const t = now / 1000;
+    const data = mode === 2 ? null : textFrame(now);
+    ctx.fillStyle = '#111214';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < 64; y += 1) {
+      for (let x = 0; x < 64; x += 1) {
+        let r;
+        let g;
+        let b;
+        if (data) {
+          const i = (y * 64 + x) * 4;
+          const lit = data[i] + data[i + 1] + data[i + 2] > 180;
+          [r, g, b] = lit ? [data[i], data[i + 1], data[i + 2]] : [38, 39, 43];
+        } else {
+          const v = Math.sin(x * 0.18 + t) + Math.sin(y * 0.14 + t * 1.3) + Math.sin((x + y) * 0.09 + t * 0.7);
+          r = 128 + 127 * Math.sin(v * Math.PI);
+          g = 128 + 127 * Math.sin(v * Math.PI + 2.1);
+          b = 128 + 127 * Math.sin(v * Math.PI + 4.2);
+        }
+        ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
+        ctx.fillRect(x * DOT + 1, y * DOT + 1, DOT - 1.5, DOT - 1.5);
+      }
+    }
+  }
+  window.requestAnimationFrame(draw);
+})();
+
+paintEggs();
