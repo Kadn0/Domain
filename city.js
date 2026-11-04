@@ -28,6 +28,7 @@ function build() {
   const canvas = document.getElementById('city');
   const labelLayer = document.getElementById('labels');
   const readout = document.getElementById('fieldWidth');
+  const readoutMeta = document.getElementById('fieldMeta');
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, narrow() ? 1.5 : 2));
@@ -158,7 +159,22 @@ function build() {
     g.fillStyle = '#d6d5d0';
     for (let y = 18; y < h; y += 46) g.fillRect(0, y, w, 7);
   };
-  const towerMats = [windows(4, 10, 0.3), windows(6, 14, 0.18), windows(3, 8, 0.4)].map((d) => std(0xffffff, { map: texture(d) }));
+  const towerGrids = [[4, 10, 0.3], [6, 14, 0.18], [3, 8, 0.4]];
+  const towerMats = towerGrids.map(([c, r, lit]) => std(0xffffff, { map: texture(windows(c, r, lit)) }));
+  // someone is always switching a light on or off somewhere in the city
+  function twinkle() {
+    const n = Math.floor(rand() * towerMats.length);
+    const [cols, rows] = towerGrids[n];
+    const tex = towerMats[n].map;
+    const g = tex.image.getContext('2d');
+    const cw = tex.image.width / cols;
+    const rh = tex.image.height / rows;
+    for (let i = 0; i < 3; i += 1) {
+      g.fillStyle = rand() < 0.35 ? '#dcdbd6' : '#3a3d41';
+      g.fillRect(Math.floor(rand() * cols) * cw + cw * 0.22, Math.floor(rand() * rows) * rh + rh * 0.28, cw * 0.56, rh * 0.36);
+    }
+    tex.needsUpdate = true;
+  }
   const stripeMat = std(0xffffff, { map: texture(stripes) });
 
   // ---------- Ground: a circuit board of rings and traces ----------
@@ -288,6 +304,25 @@ function build() {
     fan.push(ix, 27, iz, p.x, p.y, p.z);
   }
   lines(fan, LINE_SOFT);
+  // packets sliding down the beam from the internet to the gate
+  const beamPackets = Array.from({ length: 16 }, () => ({ line: Math.floor(rand() * 18), t: rand(), speed: 0.25 + rand() * 0.3 }));
+  const beamMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), M.glow, beamPackets.length);
+  city.add(beamMesh);
+  animators.push((t, dt) => {
+    beamPackets.forEach((p, n) => {
+      p.t += p.speed * dt;
+      if (p.t > 1) {
+        p.t = 0;
+        p.line = Math.floor(Math.random() * 18);
+      }
+      const f = fan.slice(p.line * 6, p.line * 6 + 6);
+      tmp.position.set(f[0] + (f[3] - f[0]) * p.t, f[1] + (f[4] - f[1]) * p.t, f[2] + (f[5] - f[2]) * p.t);
+      tmp.rotation.set(0, 0, 0);
+      tmp.updateMatrix();
+      beamMesh.setMatrixAt(n, tmp.matrix);
+    });
+    beamMesh.instanceMatrix.needsUpdate = true;
+  });
   anchor('inet', 'INTERNET', ix, 33, iz);
   const cfTop = world(gate, 0, 9, 0);
   anchor('cf', 'CLOUDFLARE', cfTop.x, cfTop.y, cfTop.z);
@@ -305,6 +340,22 @@ function build() {
   lattice(-4, 4, 2.2, 21, 9, dns);
   const beacon = box(0.6, 0.6, 0.6, -4, 21.2, 4, M.glow, dns, { edges: false, cast: false });
   animators.push((t) => { beacon.visible = Math.sin(t * 3) > 0; });
+  // lookups arriving at the dome: most are let through, ad and tracker lookups bounce off
+  const lookups = Array.from({ length: 14 }, () => ({ a: rand() * Math.PI * 2, r: 6 + rand() * 9, y: 1 + rand() * 3, dir: -1, blocked: rand() < 0.45, speed: 2.5 + rand() * 2 }));
+  const lookupMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), M.glow, lookups.length);
+  dns.add(lookupMesh);
+  animators.push((t, dt) => {
+    lookups.forEach((l, n) => {
+      l.r += l.dir * l.speed * dt;
+      if (l.dir < 0 && l.blocked && l.r < 5.6) l.dir = 1;
+      if (l.r < 0.6 || l.r > 15) Object.assign(l, { a: Math.random() * Math.PI * 2, r: 15, dir: -1, blocked: Math.random() < 0.45 });
+      tmp.position.set(Math.cos(l.a) * l.r, l.y * Math.min(1, l.r / 5.6), Math.sin(l.a) * l.r);
+      tmp.rotation.set(0, l.a, 0);
+      tmp.updateMatrix();
+      lookupMesh.setMatrixAt(n, tmp.matrix);
+    });
+    lookupMesh.instanceMatrix.needsUpdate = true;
+  });
   const dnsTop = world(dns, 0, 1.4, 0);
   anchor('dns', 'DNS PI', dnsTop.x, dnsTop.y, dnsTop.z);
 
@@ -319,19 +370,126 @@ function build() {
   box(0.5, 4, 0.5, -4, 0, -4, M.mid, media);
   box(0.5, 4, 0.5, -4, 0, 4, M.mid, media);
   box(0.5, 6.4, 10.4, -4, 4, 0, M.dark, media);
-  const screenTex = texture((g, w, h) => {
-    g.fillStyle = '#d9d8d3';
-    g.fillRect(0, 0, w, h);
-    g.fillStyle = '#25272a';
+  // Jellyfin is playing an original short: Finley the dog out for a walk, with the player UI over it
+  const screenTex = texture(() => {}, 384, 228);
+  const RUNTIME = 22 * 60 + 30;
+  const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  function drawShow(t) {
+    const g = screenTex.image.getContext('2d');
+    const W = 384;
+    const H = 228;
+    const sky = g.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#8fc6ee');
+    sky.addColorStop(1, '#e6f3fb');
+    g.fillStyle = sky;
+    g.fillRect(0, 0, W, H);
+    g.fillStyle = '#ffd56b';
     g.beginPath();
-    g.moveTo(w * 0.42, h * 0.32);
-    g.lineTo(w * 0.42, h * 0.68);
-    g.lineTo(w * 0.62, h * 0.5);
+    g.arc(312, 46, 20, 0, Math.PI * 2);
     g.fill();
-    g.fillRect(w * 0.1, h * 0.84, w * 0.8, h * 0.03);
-    g.fillStyle = '#6a6d71';
-    g.fillRect(w * 0.1, h * 0.84, w * 0.35, h * 0.03);
-  }, 256, 160);
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 3; i += 1) {
+      const x = ((i * 150 - t * 8) % 540 + 540) % 540 - 80;
+      [[0, 0, 22], [20, -8, 18], [38, 2, 16]].forEach(([dx, dy, r]) => {
+        g.beginPath();
+        g.arc(x + dx, 40 + i * 14 + dy, r, 0, Math.PI * 2);
+        g.fill();
+      });
+    }
+    const hill = (color, base, amp, freq, speed) => {
+      g.fillStyle = color;
+      g.beginPath();
+      g.moveTo(0, H);
+      for (let x = 0; x <= W; x += 8) g.lineTo(x, base + Math.sin((x + t * speed) * freq) * amp);
+      g.lineTo(W, H);
+      g.fill();
+    };
+    hill('#9cc98a', 150, 12, 0.012, 14);
+    hill('#6fae63', 172, 7, 0.02, 34);
+    // trees go past at walking speed
+    for (let i = 0; i < 4; i += 1) {
+      const x = ((i * 120 - t * 34) % 480 + 480) % 480 - 40;
+      g.fillStyle = '#6b4a2b';
+      g.fillRect(x - 3, 150, 6, 22);
+      g.fillStyle = '#4f8f4a';
+      g.beginPath();
+      g.arc(x, 145, 15, 0, Math.PI * 2);
+      g.fill();
+    }
+    // Finley
+    const step = Math.sin(t * 9);
+    const bob = Math.abs(Math.cos(t * 9)) * 2;
+    const dx = 130;
+    const dy = 160 - bob;
+    g.strokeStyle = '#5a3a1e';
+    g.lineWidth = 5;
+    g.lineCap = 'round';
+    [[-18, step], [-8, -step], [14, -step], [24, step]].forEach(([lx, s]) => {
+      g.beginPath();
+      g.moveTo(dx + lx, dy + 6);
+      g.lineTo(dx + lx + s * 6, dy + 22 + bob);
+      g.stroke();
+    });
+    g.beginPath();
+    g.moveTo(dx - 26, dy - 4);
+    g.quadraticCurveTo(dx - 40, dy - 18 + Math.sin(t * 16) * 6, dx - 34, dy - 26 + Math.sin(t * 16) * 4);
+    g.stroke();
+    g.fillStyle = '#9a6634';
+    g.beginPath();
+    g.ellipse(dx, dy, 30, 14, 0, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.arc(dx + 32, dy - 14, 13, 0, Math.PI * 2);
+    g.fill();
+    g.beginPath();
+    g.ellipse(dx + 45, dy - 10, 9, 6, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#5a3a1e';
+    g.beginPath();
+    g.ellipse(dx + 26, dy - 18, 6, 11, 0.4, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = '#1b1b1b';
+    g.beginPath();
+    g.arc(dx + 37, dy - 18, 2.2, 0, Math.PI * 2);
+    g.arc(dx + 53, dy - 11, 3, 0, Math.PI * 2);
+    g.fill();
+    // a ball that keeps getting away from him
+    const bx = dx + 90 + Math.sin(t * 0.7) * 30;
+    const by = 174 - Math.abs(Math.sin(t * 3.2)) * 34;
+    g.fillStyle = '#e8574a';
+    g.beginPath();
+    g.arc(bx, by, 8, 0, Math.PI * 2);
+    g.fill();
+    // player chrome
+    const pos = (t * 4) % RUNTIME;
+    g.fillStyle = 'rgba(16,17,19,0.62)';
+    g.fillRect(0, 0, W, 22);
+    g.fillRect(0, H - 44, W, 44);
+    g.fillStyle = '#e4e3de';
+    g.font = 'bold 11px monospace';
+    g.fillText('JELLYFIN  ·  NOW PLAYING', 10, 15);
+    g.font = 'bold 13px sans-serif';
+    g.fillText("Finley's Big Day", 34, H - 26);
+    g.font = '10px monospace';
+    g.fillText(`S1 · E3   ${mmss(pos)} / ${mmss(RUNTIME)}`, 34, H - 12);
+    g.beginPath();
+    g.moveTo(12, H - 36);
+    g.lineTo(12, H - 18);
+    g.lineTo(26, H - 27);
+    g.fill();
+    g.fillStyle = 'rgba(228,227,222,0.3)';
+    g.fillRect(190, H - 22, 180, 3);
+    g.fillStyle = '#aa5cc3';
+    g.fillRect(190, H - 22, 180 * (pos / RUNTIME), 3);
+    screenTex.needsUpdate = true;
+  }
+  drawShow(0);
+  let showClock = 0;
+  animators.push((t) => {
+    if (t - showClock < 1 / 15) return;
+    showClock = t;
+    drawShow(t);
+  });
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(9.8, 5.8), new THREE.MeshBasicMaterial({ map: screenTex }));
   screen.position.set(-4.27, 7.2, 0);
   screen.rotation.y = -Math.PI / 2;
@@ -430,12 +588,44 @@ function build() {
   box(4, 0.35, 8.5, 0, 3, 0, M.mid, lab);
   [[-1.7, -4], [1.7, -4], [-1.7, 4], [1.7, 4]].forEach(([x, z]) => box(0.3, 3, 0.3, x, 0, z, M.dark, lab));
   box(2, 4.4, 4.2, 0.6, 0, 6.6, towerMats[0], lab);
-  [-2, 2].forEach((z) => {
+  // the monitors run the LLM Scanner: a garak scan filling its probe bars, and a chat beside it
+  const probes = [0.2, 0.5, 0.8, 0.35, 0.6, 0.1];
+  const scanTex = texture(() => {}, 256, 160);
+  const drawScan = () => {
+    const g = scanTex.image.getContext('2d');
+    g.fillStyle = '#d9d8d3';
+    g.fillRect(0, 0, 256, 160);
+    g.fillStyle = '#25272a';
+    g.font = 'bold 14px monospace';
+    g.fillText('GARAK  OWASP LLM TOP 10', 14, 24);
+    probes.forEach((p, i) => {
+      g.fillStyle = '#b9b8b3';
+      g.fillRect(14, 40 + i * 19, 228, 9);
+      g.fillStyle = '#25272a';
+      g.fillRect(14, 40 + i * 19, 228 * p, 9);
+    });
+    scanTex.needsUpdate = true;
+  };
+  drawScan();
+  const chatTex = texture((g) => {
+    g.fillStyle = '#d9d8d3';
+    g.fillRect(0, 0, 256, 160);
+    g.fillStyle = '#25272a';
+    [[120, 18, 120, 26], [16, 54, 150, 34], [100, 98, 140, 22], [16, 128, 110, 22]].forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
+  }, 256, 160);
+  [[-2, scanTex], [2, chatTex]].forEach(([z, map]) => {
     box(0.25, 2.3, 3.4, 0.6, 3.6, z, M.dark, lab);
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 2), new THREE.MeshBasicMaterial({ color: 0xc9c8c3 }));
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 2), new THREE.MeshBasicMaterial({ map }));
     s.position.set(0.46, 4.75, z);
     s.rotation.y = -Math.PI / 2;
     lab.add(s);
+  });
+  let scanClock = 0;
+  animators.push((t) => {
+    if (t - scanClock < 0.4) return;
+    scanClock = t;
+    probes.forEach((p, i) => { probes[i] = p >= 1 ? 0 : Math.min(1, p + Math.random() * 0.12); });
+    drawScan();
   });
   box(1.2, 0.1, 3, -0.6, 3.35, 0, M.light, lab, { cast: false });
   box(0.35, 9, 0.35, 2, 0, -8, M.mid, lab);
@@ -446,8 +636,20 @@ function build() {
   bowl.rotation.x = Math.PI / 2.4;
   lines([0, 0, 0, 0, -1.2, 2.2], LINE, dish);
   animators.push((t) => { dish.rotation.y = t * 0.4; });
+  // radio waves rising off the dish
+  const waves = [0, 0.5].map((phase) => {
+    const mat = new THREE.LineBasicMaterial({ color: INK.clone(), transparent: true, opacity: 0.5 });
+    const ring = circle(1, 0, mat, lab, 48);
+    return { ring, mat, phase };
+  });
+  animators.push((t) => waves.forEach((w) => {
+    const p = (t * 0.45 + w.phase) % 1;
+    w.ring.position.set(2, 11.5 + p * 7, -8);
+    w.ring.scale.setScalar(1.5 + p * 6);
+    w.mat.opacity = 0.5 * (1 - p);
+  }));
   const deskTop = world(lab, 0, 7.4, 0);
-  anchor('desk', 'WORKSTATION', deskTop.x, deskTop.y, deskTop.z);
+  anchor('desk', 'LLM SCANNER', deskTop.x, deskTop.y, deskTop.z);
   const radioTop = world(lab, 2, 12.4, -8);
   anchor('radio', 'RADIO PI', radioTop.x, radioTop.y, radioTop.z);
 
@@ -492,21 +694,41 @@ function build() {
     leds.push(box(0.2, 0.2, 0.2, 1.1, 0.8 + i * 1.15, 0.5, M.glow, helpers, { edges: false, cast: false }));
   }
   animators.push((t) => leds.forEach((l, i) => { l.visible = Math.sin(t * (2 + i) + i) > -0.2; }));
-  const hTop = world(helpers, 0, 8.6, 0);
-  anchor('svc', 'HELPERS', hTop.x, hTop.y, hTop.z);
+  // 08 Hardening: a padlock over the cluster, and an audit ring sweeping outward across the ground
+  const lock = new THREE.Group();
+  lock.position.set(0, 11, 0);
+  helpers.add(lock);
+  box(2.6, 2.1, 1, 0, -1.05, 0, M.mid, lock);
+  const shackle = mesh(new THREE.TorusGeometry(0.85, 0.17, 10, 28, Math.PI), M.light, 0, 1.05, 0, lock, { line: LINE_SOFT });
+  shackle.rotation.z = 0;
+  box(0.3, 0.6, 0.06, 0, -0.5, 0.52, M.glow, lock, { edges: false, cast: false });
+  box(0.3, 0.6, 0.06, 0, -0.5, -0.52, M.glow, lock, { edges: false, cast: false });
+  lines([0, 0.5, 0, 0, 9.4, 0], LINE_SOFT, helpers);
+  const sweepMat = new THREE.LineBasicMaterial({ color: INK.clone(), transparent: true, opacity: 0.6 });
+  const sweep = circle(1, 0.12, sweepMat, helpers, 64);
+  animators.push((t) => {
+    lock.rotation.y = t * 0.5;
+    lock.position.y = 11 + Math.sin(t * 1.4) * 0.4;
+    const p = (t * 0.35) % 1;
+    sweep.scale.setScalar(1 + p * 11);
+    sweepMat.opacity = 0.6 * (1 - p);
+  });
+  const hTop = world(helpers, 0, 13.6, 0);
+  anchor('svc', 'HARDENING', hTop.x, hTop.y, hTop.z);
 
   // ---------- Camera shots, one per chapter ----------
   // target, then azimuth (degrees around the target), elevation (degrees) and distance
   const at = (deg, r, y) => { const [x, z] = polar(deg, r); return [x, y, z]; };
   const SHOTS = {
-    'ch-01': { target: [0, 0, 0], az: 58, el: 50, dist: 118, labels: ['gw', 'cf', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns'] },
+    'ch-01': { target: [0, 0, 0], az: 58, el: 50, dist: 118, labels: ['gw', 'cf', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns', 'svc'] },
     'ch-02': { target: at(0, 40, 13), az: 40, el: 18, dist: 68, labels: ['inet', 'cf'] },
     'ch-03': { target: at(26, 14, 4), az: 82, el: 32, dist: 50, labels: ['gw', 'dns'] },
-    'ch-04': { target: at(90, 27, 7), az: 128, el: 28, dist: 46, labels: ['nas', 'media', 'jelly', 'seerr'] },
+    'ch-04': { target: at(90, 25, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
     'ch-05': { target: at(135, 27, 3), az: 170, el: 32, dist: 30, labels: ['mc'] },
     'ch-06': { target: at(180, 27, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi'] },
     'ch-07': { target: at(225, 27, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio'] },
-    'ch-08': { target: at(270, 27, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
+    'ch-08': { target: at(315, 25, 6), az: 345, el: 26, dist: 32, labels: ['svc'] },
+    'ch-09': { target: at(270, 27, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
   };
   // keep filler buildings out of every close-up's line of sight
   const sightlines = Object.entries(SHOTS).filter(([id]) => id !== 'ch-01').map(([, s]) => {
@@ -522,6 +744,8 @@ function build() {
 
   // ---------- The rest of the city: towers, scaffolds and cranes ----------
   const cranes = [];
+  const beacons = [];
+  const BEACON = new THREE.MeshBasicMaterial({ color: 0xff4a3d });
   const nearDistrict = (x, z) => DISTRICTS.some((d) => {
     const [dx, dz] = polar(d, 27);
     return Math.hypot(x - dx, z - dz) < 12.5;
@@ -547,6 +771,7 @@ function build() {
       const b = box(w, h, w, x, 0, z, towerMats[Math.floor(rand() * 3)], city, { cast: !far });
       b.rotation.y = -rad(deg);
       if (rand() < 0.4) box(w * 0.6, 1.2, w * 0.6, x, h, z, M.mid, city, { cast: !far });
+      if (h > 16) beacons.push({ m: box(0.35, 0.35, 0.35, x, h + 0.1, z, BEACON, city, { edges: false, cast: false }), phase: rand() * 6 });
     } else if (kind < 0.75) {
       const h = 6 + rand() * 18;
       box(w * 0.66, h, w * 0.66, x, 0, z, M.dark, city, { cast: !far, line: LINE_SOFT });
@@ -569,6 +794,33 @@ function build() {
     }
   }
   animators.push((t) => cranes.forEach((c) => { c.jib.rotation.y = c.phase + t * c.speed; }));
+
+  let twinkleClock = 0;
+  animators.push((t) => {
+    beacons.forEach((b) => { b.m.visible = Math.sin(t * 2.2 + b.phase) > 0.6; });
+    if (t - twinkleClock > 0.5) {
+      twinkleClock = t;
+      twinkle();
+    }
+  });
+
+  // ---------- A plane overhead, the kind the LED wall tracks ----------
+  const plane = new THREE.Group();
+  box(5, 0.7, 0.7, 0, -0.35, 0, M.light, plane);
+  box(1.4, 0.12, 6.4, 0.2, 0, 0, M.light, plane);
+  box(0.8, 0.1, 2.4, -2.2, 0, 0, M.light, plane);
+  box(0.7, 1.3, 0.1, -2.2, 0, 0, M.light, plane);
+  const navRed = box(0.25, 0.25, 0.25, 0.2, 0, -3.3, new THREE.MeshBasicMaterial({ color: 0xff4a3d }), plane, { edges: false, cast: false });
+  const navGreen = box(0.25, 0.25, 0.25, 0.2, 0, 3.3, new THREE.MeshBasicMaterial({ color: 0x4dff88 }), plane, { edges: false, cast: false });
+  const strobe = box(0.3, 0.3, 0.3, -2.6, 1.3, 0, M.glow, plane, { edges: false, cast: false });
+  scene.add(plane);
+  animators.push((t) => {
+    const a = t * 0.05;
+    plane.position.set(Math.cos(a) * 78, 40 + Math.sin(t * 0.3) * 1.5, Math.sin(a) * 78);
+    plane.rotation.set(0.12, -a - Math.PI / 2, 0); // banking into the turn
+    strobe.visible = (t % 1.4) < 0.08;
+    navRed.visible = navGreen.visible = (t % 1) < 0.7;
+  });
 
   // ---------- Traffic: packets on the rings and the radial roads ----------
   const cars = [];
@@ -672,7 +924,7 @@ function build() {
 
     if (!reduced) {
       moveCars(dt);
-      animators.forEach((fn) => fn(clock));
+      animators.forEach((fn) => fn(clock, dt));
     } else if (ledTex) {
       ledTex.needsUpdate = true;
     }
@@ -704,6 +956,7 @@ function build() {
     const width = 2 * dist * Math.tan(rad(camera.fov / 2)) * camera.aspect * 10;
     shownWidth += (width - shownWidth) * 0.2;
     if (readout) readout.textContent = Math.round(shownWidth).toLocaleString('en-US');
+    if (readoutMeta) readoutMeta.textContent = `HDG ${String(Math.round(((cam.az + drift + 180) % 360 + 360) % 360)).padStart(3, '0')}°  ·  ALT ${Math.round(camera.position.y)}`;
   }
   window.requestAnimationFrame(frame);
 }

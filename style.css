@@ -219,6 +219,20 @@ html[data-mode="comm"] .ver[data-ver="comm"] { opacity: 1; visibility: visible; 
 .link-button[data-status="success"]::after { content: "  copied"; color: var(--ok); }
 .link-button[data-status="error"]::after { content: "  copy failed"; color: var(--bad); }
 
+/* ---------- Project cards and the projects page ---------- */
+.project dl { margin: 0; border-top: 1px solid var(--rule); }
+.project dl div { display: grid; grid-template-columns: 70px 1fr; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+.project dt { font: 400 10px/1.6 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.project dd { margin: 0; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.project a, .card a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.plist { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.plist button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.plist button:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.plist button:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+.plist b { font-weight: 500; font-size: 17px; }
+.plist span { font-size: 14px; color: color-mix(in srgb, var(--ink) 85%, transparent); }
+.plist small { font: 400 10px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
 /* ---------- Services ---------- */
 .status-bar { display: flex; flex-wrap: wrap; gap: 8px; }
 .status-chip { position: relative; font: 400 10px/1.4 var(--mono); letter-spacing: 0.04em; padding: 6px 8px; border: 1px solid var(--rule); color: var(--muted); }
@@ -321,3 +335,15 @@ html.root #title { color: #d9b45a; }
 @media (prefers-reduced-motion: reduce) {
   .track, .ver, .vers-mark, .idx-mark, #scene, .landing * { transition: none !important; }
 }
+.project header .n { text-transform: uppercase; }
+
+/* ---------- Small live details ---------- */
+#readout small { font: 400 10px/1 var(--mono); letter-spacing: 0.12em; color: var(--muted); margin-top: 6px; }
+.lab { margin: auto 0 -16px; display: flex; align-items: center; gap: 8px; font: 400 10px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lab::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.lab.up { color: var(--ink); }
+.lab.up::before { background: var(--ok); box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); animation: beat 2.4s ease-out infinite; }
+.lab.down::before { background: var(--bad); }
+.lab + .sign { margin-top: 0; }
+@keyframes beat { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+@media (prefers-reduced-motion: reduce) { .lab.up::before { animation: none; } }
