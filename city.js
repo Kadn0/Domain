@@ -1051,7 +1051,7 @@ function build() {
   box(3.2, 1, 9, 1.2, 0, 0, M.mid, arcade);
   box(1.6, 6.6, 10.4, 0, 1, 0, M.light, handheld);
   [-5.2, 5.2].forEach((z) => {
-    const grip = mesh(new THREE.CylinderGeometry(3.3, 3.3, 1.7, 32, 1, false, z < 0 ? Math.PI : 0, Math.PI), M.light, 0, 4.3, z, handheld, { line: LINE_SOFT });
+    const grip = mesh(new THREE.CylinderGeometry(3.3, 3.3, 1.7, 32, 1, false, z < 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI), M.light, 0, 4.3, z, handheld, { line: LINE_SOFT });
     grip.rotation.z = Math.PI / 2;
     box(0.5, 0.5, 2.6, 0.2, 7.55, z * 0.82, M.mid, handheld, { cast: false }); // shoulder buttons
   });
@@ -1079,7 +1079,7 @@ function build() {
   for (let i = 0; i < 4; i += 1) grille.push(-0.83, 1.2 + i * 0.25, -4.4, -0.83, 1.2 + i * 0.25, -3.6, -0.83, 1.2 + i * 0.25, 3.6, -0.83, 1.2 + i * 0.25, 4.4);
   lines(grille, LINE_SOFT, handheld);
   // snake that chases its food around the little screen
-  const snake = { body: [[6, 8], [5, 8], [4, 8]], food: [16, 5] };
+  const snake = { body: [[10, 9], [9, 9], [8, 9], [7, 9], [6, 9], [5, 9], [5, 10], [5, 11], [5, 12]], food: [17, 6] };
   function drawLcd() {
     const g = lcd.image.getContext('2d');
     g.fillStyle = '#c9c9c5';
@@ -1091,7 +1091,6 @@ function build() {
     g.fillRect(0, 63, 96, 1);
     g.fillRect(0, 0, 1, 64);
     g.fillRect(95, 0, 1, 64);
-    [[20, 20, 20, 2], [56, 40, 22, 2], [40, 10, 2, 14], [70, 18, 2, 12]].forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
     g.fillRect(4, 4, 3, 5); g.fillRect(8, 4, 3, 5); g.fillRect(12, 4, 3, 5);
     lcd.needsUpdate = true;
   }
@@ -1102,7 +1101,7 @@ function build() {
     snake.body.unshift(next);
     if (next[0] === fx && next[1] === fy) {
       snake.food = [1 + Math.floor(Math.random() * 22), 1 + Math.floor(Math.random() * 14)];
-      if (snake.body.length > 24) snake.body.length = 3;
+      if (snake.body.length > 24) snake.body.length = 9;
     } else snake.body.pop();
     drawLcd();
   }
