@@ -3,7 +3,7 @@
 // Only answers for the hosts below and only to kadents.com, so it can't be used as an open relay.
 
 const ALLOW_ORIGIN = 'https://kadents.com';
-const ALLOWED_HOSTS = new Set(['serber.kadents.com']);
+const ALLOWED_HOSTS = new Set(['mc.kadents.com']);
 const CORS = { 'Access-Control-Allow-Origin': ALLOW_ORIGIN, 'Access-Control-Allow-Methods': 'GET,OPTIONS', Vary: 'Origin' };
 const json = (body, status) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...CORS } });
 
