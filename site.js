@@ -494,7 +494,7 @@ function startSaver() {
   if (!modal.hidden) return resetIdle();
   saver.hidden = false;
   const pos = { x: 40, y: 40, dx: 1.6, dy: 1.2 };
-  const colors = ['#8b6cff', '#7fd6a4', '#e6b56a', '#e8857a', '#e8e6e1'];
+  const colors = ['#e4e3de', '#9a9a9a', '#ffffff', '#6e6e6e', '#c8c8c4'];
   let c = 0;
   const step = () => {
     const maxX = window.innerWidth - saverText.offsetWidth;
@@ -555,18 +555,18 @@ resetIdle();
       const d = new Date();
       const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
       octx.textAlign = 'center';
-      octx.fillStyle = '#8b6cff';
+      octx.fillStyle = '#ecebe6';
       octx.font = 'bold 17px monospace';
       octx.fillText(hm, 32, 26);
-      octx.fillStyle = '#e6b56a';
+      octx.fillStyle = '#9d9d9a';
       octx.font = 'bold 9px monospace';
       octx.fillText(d.toLocaleDateString('en-US', { weekday: 'short', day: '2-digit' }).toUpperCase(), 32, 44);
       // seconds bar along the bottom edge
-      octx.fillStyle = '#7fd6a4';
+      octx.fillStyle = '#c8c8c4';
       octx.fillRect(2, 58, Math.round((d.getSeconds() / 59) * 60), 2);
     } else {
       octx.textAlign = 'left';
-      octx.fillStyle = '#5fd3e8';
+      octx.fillStyle = '#ecebe6';
       octx.font = 'bold 14px monospace';
       octx.fillText(MESSAGE, scroll, 32);
       const width = octx.measureText(MESSAGE).width;
@@ -595,9 +595,7 @@ resetIdle();
           [r, g, b] = lit ? [data[i], data[i + 1], data[i + 2]] : [38, 39, 43];
         } else {
           const v = Math.sin(x * 0.18 + t) + Math.sin(y * 0.14 + t * 1.3) + Math.sin((x + y) * 0.09 + t * 0.7);
-          r = 128 + 127 * Math.sin(v * Math.PI);
-          g = 128 + 127 * Math.sin(v * Math.PI + 2.1);
-          b = 128 + 127 * Math.sin(v * Math.PI + 4.2);
+          r = g = b = 128 + 127 * Math.sin(v * Math.PI); // grayscale plasma
         }
         ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
         ctx.fillRect(x * DOT + 1, y * DOT + 1, DOT - 1.5, DOT - 1.5);

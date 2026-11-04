@@ -8,10 +8,10 @@
   --shade: #16181a;
   --ink: #e4e3de;
   --muted: #9a9fa3;
-  --accent: #8b6cff; /* Kadents violet, kept for the eggs and the Launcher */
-  --ok: #7fd6a4;
-  --warn: #e6b56a;
-  --bad: #e8857a;
+  --accent: #ffffff; /* grayscale throughout: states differ by brightness, not hue */
+  --ok: #e4e3de;
+  --warn: #a9a9a5;
+  --bad: #7a7a78;
   --panel: color-mix(in srgb, var(--bg) 84%, transparent);
   --rule: color-mix(in srgb, var(--ink) 24%, transparent);
   --faint: color-mix(in srgb, var(--ink) 20%, transparent);
@@ -238,7 +238,7 @@ html[data-mode="comm"] .ver[data-ver="comm"] { opacity: 1; visibility: visible; 
 .status-chip { position: relative; font: 400 10px/1.4 var(--mono); letter-spacing: 0.04em; padding: 6px 8px; border: 1px solid var(--rule); color: var(--muted); }
 .status-chip.is-online { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
 .status-chip.is-sleeping, .status-chip.is-error { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
-.status-chip.is-offline { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+.status-chip.is-offline { text-decoration: line-through; color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
 .status-chip[data-tooltip]::after {
   content: attr(data-tooltip); position: absolute; left: 0; bottom: calc(100% + 6px); z-index: 5;
   background: var(--page); border: 1px solid var(--rule); color: var(--ink); padding: 6px 8px;
@@ -261,9 +261,9 @@ html[data-mode="comm"] .ver[data-ver="comm"] { opacity: 1; visibility: visible; 
 .btn:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
 .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .btn.primary:hover { background: #fff; }
-.row--launcher .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn.success { background: var(--ok); color: #0c1a12; border-color: var(--ok); }
-.btn.error { background: var(--bad); color: #1f0a07; border-color: var(--bad); }
+.row--launcher .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn.success { background: var(--ok); color: var(--bg); border-color: var(--ok); }
+.btn.error { background: var(--bad); color: var(--bg); border-color: var(--bad); }
 
 .foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font: 400 10px/1 var(--mono); letter-spacing: 0.08em; color: var(--muted); }
 .foot button { all: unset; cursor: pointer; }
@@ -308,11 +308,11 @@ html[data-mode="comm"] .ver[data-ver="comm"] { opacity: 1; visibility: visible; 
 html.rgb :is(#map, #scene) { animation: hue 3s linear infinite; }
 html.rgb :is(#map, #scene) :is(.wires path, .node > *) { stroke: #ff4d8d; }
 @keyframes hue { to { filter: hue-rotate(360deg); } }
-html.root :is(#map, #scene) :is(.wires path, .node > *) { stroke: #d9b45a; }
-html.root #title { color: #d9b45a; }
+html.root :is(#map, #scene) :is(.wires path, .node > *) { stroke: #ffffff; }
+html.root #title { color: #ffffff; text-shadow: 0 0 18px #ffffff66; }
 .boom { animation: shake 0.5s linear 3; }
 @keyframes shake { 0%, 100% { transform: none; } 25% { transform: translate(-4px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, -3px); } }
-#title.led-type { font-family: var(--mono); letter-spacing: 0; color: #ff9d3c; text-shadow: 0 0 12px #ff9d3c88; }
+#title.led-type { font-family: var(--mono); letter-spacing: 0; color: #ffffff; text-shadow: 0 0 12px #ffffff88; }
 
 /* ---------- Narrow screens: a top bar replaces the rail, panels sit low over the map ---------- */
 @media (max-width: 899px) {
@@ -351,10 +351,10 @@ html.root #title { color: #d9b45a; }
 .now b { font: 500 10px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; margin-right: 8px; }
 
 /* ---------- The live Jellyfin screen (YouTube player laid over the 3D screen) ---------- */
-#tv { position: fixed !important; inset: 0; z-index: 0; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.6s ease, visibility 0s linear 0.6s; }
-html.tv-on #tv { opacity: 1; visibility: visible; transition: opacity 0.6s ease, visibility 0s; }
+#tv { position: fixed !important; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 0.9s ease; }
+html.three.in-chapters #tv { opacity: 1; }
 .tv-frame { width: 992px; height: 592px; background: #000; pointer-events: none; }
-.tv-frame iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }
+.tv-frame iframe { width: 100%; height: 100%; border: 0; display: block; pointer-events: none; filter: grayscale(1) contrast(1.05); }
 .tv-sound {
   position: fixed; left: 0; top: 0; z-index: 2; display: none; translate: 0 8px;
   padding: 5px 8px 4px; border: 1px solid var(--ink); background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--ink);
@@ -364,7 +364,7 @@ html.tv-on #tv { opacity: 1; visibility: visible; transition: opacity 0.6s ease,
 .tv-sound[aria-pressed="true"]::before { background: var(--ok); }
 .tv-sound:hover { background: var(--ink); color: var(--bg); }
 .tv-sound:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
-html.tv-on .tv-sound { display: block; }
+html.tv-sound-on .tv-sound { display: block; }
 /* the chapters are full-width sections over the city; let clicks through to the sound button except on the panels */
 .stage { pointer-events: none; }
 .stage :is(.panel, .track) { pointer-events: auto; }
