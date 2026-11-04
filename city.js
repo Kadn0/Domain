@@ -297,6 +297,21 @@ function build() {
   const vents = [];
   for (let x = -2.2; x <= 2.2; x += 0.55) vents.push(x, 1.52, -1.2, x, 1.52, 1.2);
   lines(vents, LINE_SOFT, router);
+  const wifiTex = texture((g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = '#e4e3de';
+    g.lineWidth = 10;
+    g.lineCap = 'round';
+    [30, 58, 86].forEach((r) => { g.beginPath(); g.arc(w / 2, h * 0.86, r, Math.PI * 1.25, Math.PI * 1.75); g.stroke(); });
+    g.fillStyle = '#e4e3de';
+    g.beginPath();
+    g.arc(w / 2, h * 0.86, 9, 0, Math.PI * 2);
+    g.fill();
+  }, 256, 128);
+  const wifi = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.6), new THREE.MeshBasicMaterial({ map: wifiTex, transparent: true, depthWrite: false }));
+  wifi.rotation.x = -Math.PI / 2;
+  wifi.position.set(0, 1.53, 0.2);
+  router.add(wifi);
   const statusLeds = [];
   for (let i = 0; i < 7; i += 1) statusLeds.push(box(0.22, 0.12, 0.06, -1.8 + i * 0.6, 0.85, 1.92, M.glow, router, { edges: false, cast: false }));
   for (let i = 0; i < 5; i += 1) box(0.5, 0.36, 0.12, -1.6 + i * 0.8, 0.6, -1.92, M.mid, router, { line: LINE_SOFT, cast: false });
@@ -374,24 +389,50 @@ function build() {
   const earthTex = texture((g, w, h) => {
     g.fillStyle = '#1b1c1e';
     g.fillRect(0, 0, w, h);
-    g.fillStyle = '#a7aaae';
-    // land: clusters of overlapping blobs, away from the poles
-    [[0.18, 0.33, 34], [0.27, 0.62, 26], [0.5, 0.3, 30], [0.53, 0.58, 24], [0.72, 0.36, 40], [0.83, 0.7, 16], [0.4, 0.86, 18]].forEach(([cx, cy, n]) => {
-      for (let i = 0; i < n; i += 1) {
-        g.beginPath();
-        g.ellipse(cx * w + (rand() - 0.5) * w * 0.12, cy * h + (rand() - 0.5) * h * 0.2, 6 + rand() * 18, 4 + rand() * 12, rand() * 3, 0, Math.PI * 2);
-        g.fill();
-      }
+    g.fillStyle = '#d2d3d5';
+    // rough continent outlines as [lon, lat] points, drawn equirectangular
+    [
+      [[-165, 65], [-140, 70], [-95, 72], [-80, 62], [-60, 55], [-65, 45], [-80, 30], [-97, 20], [-90, 15], [-80, 8], [-105, 22], [-118, 33], [-125, 48], [-150, 60]],
+      [[-80, 8], [-60, 10], [-35, -7], [-40, -22], [-55, -35], [-68, -55], [-75, -45], [-72, -18], [-81, -5]],
+      [[-17, 15], [-10, 30], [10, 37], [32, 31], [43, 12], [51, 11], [40, -15], [32, -28], [20, -35], [12, -18], [9, 4], [-8, 5]],
+      [[-10, 36], [-9, 43], [-5, 48], [5, 52], [10, 58], [25, 70], [60, 70], [100, 77], [140, 72], [180, 68], [160, 60], [140, 50], [122, 40], [120, 25], [108, 20], [100, 8], [95, 15], [80, 8], [72, 20], [57, 25], [50, 30], [35, 36], [28, 40], [20, 40], [12, 44], [0, 40]],
+      [[113, -22], [122, -17], [131, -12], [142, -11], [153, -26], [150, -37], [140, -38], [132, -32], [115, -34]],
+      [[-55, 60], [-45, 60], [-20, 70], [-25, 82], [-60, 82], [-70, 77]],
+      [[-6, 50], [2, 51], [-3, 58], [-6, 56]],
+      [[130, 31], [141, 36], [142, 44], [136, 36]],
+      [[44, -13], [50, -15], [48, -25], [43, -22]],
+      [[95, 5], [105, -6], [115, -8], [118, -2], [110, 2], [100, 6]],
+      [[120, -2], [140, -3], [150, -6], [140, -9], [125, -8]],
+      [[166, -46], [174, -36], [178, -38], [170, -46]],
+      [[-85, 22], [-75, 20], [-74, 19], [-84, 21]],
+    ].forEach((shape) => {
+      g.beginPath();
+      shape.forEach(([lon, lat]) => g.lineTo(((lon + 180) / 360) * w, ((90 - lat) / 180) * h));
+      g.closePath();
+      g.fill();
     });
+    g.fillRect(0, h * 0.92, w, h * 0.08); // antarctica
     g.strokeStyle = 'rgba(228,227,222,0.28)';
     g.lineWidth = 1;
     for (let x = 0; x <= w; x += w / 12) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
     for (let y = h / 6; y < h; y += h / 6) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
   }, 512, 256);
   // the land glows a little so the continents read even on the night side
-  const globe = new THREE.Mesh(new THREE.SphereGeometry(6, 48, 32), std(0xffffff, { map: earthTex, emissive: 0xffffff, emissiveMap: earthTex, emissiveIntensity: 0.5, roughness: 0.7 }));
+  const globe = new THREE.Mesh(new THREE.SphereGeometry(6, 48, 32), std(0xffffff, { map: earthTex, emissive: 0xffffff, emissiveMap: earthTex, emissiveIntensity: 0.65, roughness: 0.7 }));
   inet.add(globe);
-  const air = new THREE.Mesh(new THREE.SphereGeometry(6.5, 48, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.07, side: THREE.BackSide, depthWrite: false }));
+  inet.rotation.z = 0.41; // the earth's axial tilt
+  lines([0, -8, 0, 0, 8, 0], LINE, inet); // the axis
+  const meridian = [];
+  for (let k = 0; k <= 32; k += 1) {
+    const a = (k / 32) * Math.PI - Math.PI / 2;
+    const b = ((k + 1) / 32) * Math.PI - Math.PI / 2;
+    if (k < 32) meridian.push(Math.cos(a) * 7.2, Math.sin(a) * 7.2, 0, Math.cos(b) * 7.2, Math.sin(b) * 7.2, 0);
+  }
+  lines(meridian, LINE, inet);
+  const ring = mesh(new THREE.TorusGeometry(7.2, 0.18, 8, 48, Math.PI), M.light, 0, 0, 0, inet, { edges: false, cast: false });
+  ring.rotation.z = -Math.PI / 2; // the half-ring holding it, like a desk globe
+  mesh(new THREE.CylinderGeometry(0.12, 0.12, 15.2, 8), M.light, 0, 0, 0, inet, { edges: false, cast: false }); // axis rod
+  const air = new THREE.Mesh(new THREE.SphereGeometry(6.5, 48, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, side: THREE.BackSide, depthWrite: false }));
   inet.add(air);
   circle(9, 0, LINE_SOFT, inet, 96).rotation.x = 0.4;
   animators.push((t) => { globe.rotation.y = t * 0.12; });
@@ -637,6 +678,8 @@ function build() {
     [[1, 1, 6, 4], [9, 0, 6, 5], [0, 6, 4, 5], [5, 6, 6, 4], [12, 6, 4, 5], [2, 12, 7, 4], [10, 11, 5, 5]].forEach(([x, y, w, h]) => g.fillRect(x, y, w, h)); // cobbles
     g.fillStyle = '#4c4c4a';
     [[1, 5, 6, 1], [9, 5, 6, 1], [0, 11, 4, 1], [5, 10, 6, 1], [2, 16, 7, 1]].forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
+    g.fillStyle = '#e8e8e4';
+    [[3, 3], [4, 3], [11, 8], [12, 9], [6, 13]].forEach(([x, y]) => g.fillRect(x, y, 1, 1)); // ore flecks
   });
   const topTex = pixTex((g) => {
     speckle('#c4c4c0', ['#a8a8a4', '#d8d8d4'], 60)(g);
@@ -742,25 +785,55 @@ function build() {
   box(0.16, 0.7, 0.16, hx - 1.6, hy + 0.8, hz + 0.6, mt(barkTex), mc, { edges: false });
   const flame = box(0.22, 0.22, 0.22, hx - 1.6, hy + 1.5, hz + 0.6, M.glow, mc, { edges: false, cast: false });
   animators.push((t) => { flame.scale.setScalar(0.85 + Math.sin(t * 13) * 0.15); });
+  const benchTop = pixTex((g) => {
+    g.fillStyle = '#8a8a86';
+    g.fillRect(0, 0, 16, 16);
+    g.fillStyle = '#5a5a57';
+    [0, 5, 10, 15].forEach((v) => { g.fillRect(v, 0, 1, 16); g.fillRect(0, v, 16, 1); }); // the work grid
+  });
+  const benchSide = pixTex((g) => {
+    g.fillStyle = '#6e6e6b';
+    g.fillRect(0, 0, 16, 16);
+    g.fillStyle = '#4e4e4b';
+    for (let y = 3; y < 16; y += 4) g.fillRect(0, y, 16, 1); // planks
+    g.fillStyle = '#2e2e2c';
+    g.fillRect(3, 5, 1, 8); g.fillRect(1, 5, 5, 2); // hammer
+    g.fillRect(10, 5, 2, 8); g.fillRect(9, 12, 4, 1); // saw
+    g.fillStyle = '#b8b8b4';
+    g.fillRect(0, 0, 16, 2); // the lighter top edge
+  });
+  const BENCH = [mt(benchSide), mt(benchSide), mt(benchTop), mt(dirtTex), mt(benchSide), mt(benchSide)];
+  box(1, 1, 1, 1.2, topAt(1, 1), 1, BENCH, mc, { line: LINE_SOFT });
   // an original blocky figure standing by the hut, two blocks tall
   const fy = topAt(0, 2);
   const figure = new THREE.Group();
   figure.position.set(0, fy, 2);
-  figure.scale.setScalar(1.6);
+  figure.scale.setScalar(2.2);
   mc.add(figure);
   const CLOTH = std(0x2c2d30);
-  const SKIN = std(0xd6d5d0);
+  const SKIN = std(0xd6d5d0, { emissive: 0x3a3a38 });
   box(0.25, 0.75, 0.25, 0, 0, -0.14, CLOTH, figure, { line: LINE_SOFT });
   box(0.25, 0.75, 0.25, 0, 0, 0.14, CLOTH, figure, { line: LINE_SOFT });
-  box(0.3, 0.75, 0.55, 0, 0.75, 0, std(0x4a4b4f), figure, { line: LINE_SOFT });
+  box(0.3, 0.75, 0.55, 0, 0.75, 0, std(0x9a9b9f), figure, { line: LINE_SOFT });
   box(0.24, 0.72, 0.24, -0.05, 0.78, -0.42, std(0x4a4b4f), figure, { line: LINE_SOFT });
   box(0.24, 0.72, 0.24, 0.05, 0.78, 0.42, std(0x4a4b4f), figure, { line: LINE_SOFT });
   box(0.26, 0.2, 0.26, -0.05, 0.62, -0.42, SKIN, figure, { edges: false });
   box(0.26, 0.2, 0.26, 0.05, 0.62, 0.42, SKIN, figure, { edges: false });
   box(0.52, 0.52, 0.52, 0, 1.5, 0, SKIN, figure, { line: LINE_SOFT });
   box(0.54, 0.16, 0.54, 0, 1.88, 0, CLOTH, figure, { edges: false });
-  box(0.04, 0.08, 0.08, -0.26, 1.78, -0.1, M.dark, figure, { edges: false, cast: false });
-  box(0.04, 0.08, 0.08, -0.26, 1.78, 0.1, M.dark, figure, { edges: false, cast: false });
+  [-0.13, 0.13].forEach((z) => {
+    box(0.03, 0.09, 0.14, -0.27, 1.72, z, new THREE.MeshBasicMaterial({ color: 0xffffff }), figure, { edges: false, cast: false }); // eye white, unlit so it reads in shade
+    box(0.04, 0.09, 0.07, -0.275, 1.72, z + (z > 0 ? -0.035 : 0.035), M.dark, figure, { edges: false, cast: false }); // pupil
+  });
+  box(0.03, 0.06, 0.24, -0.27, 1.56, 0, std(0x5a5b5e), figure, { edges: false, cast: false }); // mouth
+  const pick = new THREE.Group(); // a pickaxe in the right hand, resting back over the shoulder
+  pick.position.set(0.05, 0.7, 0.62);
+  pick.rotation.z = -0.55;
+  figure.add(pick);
+  box(0.1, 1.3, 0.1, 0, 0, 0, std(0x5a5b5e), pick, { line: LINE_FAINT }); // handle
+  box(0.16, 0.18, 1.2, 0, 1.25, 0, std(0xf0efea), pick, { line: LINE }); // head
+  box(0.12, 0.12, 0.2, 0, 1.2, -0.68, std(0xf0efea), pick, { edges: false }); // drooping tips
+  box(0.12, 0.12, 0.2, 0, 1.2, 0.68, std(0xf0efea), pick, { edges: false });
   figure.rotation.y = Math.PI * 0.75;
   // flat block clouds drifting over the chunk
   const clouds = new THREE.Group();
@@ -769,7 +842,7 @@ function build() {
   [[-3, 0, 4, 2.4], [2, -3, 3, 1.8], [-1, 3, 2.6, 2.2]].forEach(([x, z, w, d]) => box(w, 0.7, d, x, 0, z, M.glow, clouds, { line: LINE_FAINT, cast: false }));
   animators.push((t) => {
     clouds.position.x = Math.sin(t * 0.08) * 2;
-    figure.rotation.y = Math.PI * 0.75 + Math.sin(t * 0.6) * 0.4;
+    figure.rotation.y = Math.PI * 0.75 + Math.sin(t * 0.6) * 0.25;
   });
   const mcHome = mc.position.clone();
   const mcTop = world(mc, 0, ty + 8, 0);
@@ -840,24 +913,40 @@ function build() {
     drawScan();
   });
   box(1.2, 0.1, 3, -0.6, 3.35, 0, M.light, lab, { cast: false });
-  mesh(new THREE.CylinderGeometry(1.3, 1.6, 1, 20), M.mid, 2, 0.5, -8, lab);
-  mesh(new THREE.CylinderGeometry(0.45, 0.55, 6.2, 16), M.dark, 2, 4.1, -8, lab, { line: LINE_SOFT });
+  mesh(new THREE.CylinderGeometry(1.3, 1.6, 1, 20), M.mid, 2.5, 0.5, -11, lab);
+  mesh(new THREE.CylinderGeometry(0.45, 0.55, 6.2, 16), M.dark, 2.5, 4.1, -11, lab, { line: LINE_SOFT });
   const dish = new THREE.Group(); // turns in azimuth
-  dish.position.set(2, 7.4, -8);
+  dish.position.set(2.5, 7.4, -11);
   lab.add(dish);
-  box(1.4, 0.9, 1.4, 0, 0, 0, M.mid, dish);
+  box(1.2, 0.5, 1.2, 0, -0.1, 0, M.mid, dish); // kept below the bowl so it does not poke through
+  mesh(new THREE.CylinderGeometry(1.1, 1.1, 0.25, 24), M.light, 0, -0.1, 0, dish, { line: LINE_SOFT }); // turntable
   const tilt = new THREE.Group(); // tipped back toward the sky
   tilt.position.y = 0.6;
   tilt.rotation.z = 0.85;
   dish.add(tilt);
+  [-0.75, 0.75].forEach((z) => box(0.22, 1.5, 0.22, 0, 0, z, M.mid, dish, { line: LINE_SOFT })); // fork arms
+  mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.7, 10), M.light, 0, 1.2, 0, dish, { edges: false, cast: false }).rotation.x = Math.PI / 2; // elevation axle
   const R = 3.2;
   const bowlGeo = new THREE.SphereGeometry(R, 40, 12, 0, Math.PI * 2, 0, 0.8);
   bowlGeo.rotateX(Math.PI);
   bowlGeo.translate(0, R, 0);
-  mesh(bowlGeo, std(0xd4d4d0, { side: THREE.DoubleSide, roughness: 0.55 }), 0, 0, 0, tilt, { line: LINE_FAINT });
+  mesh(bowlGeo, std(0xb4b5b7, { side: THREE.DoubleSide, roughness: 0.75 }), 0, 0, 0, tilt, { line: LINE_FAINT });
+  const ribs = [];
+  for (let k = 0; k < 12; k += 1) {
+    const a = (k / 12) * Math.PI * 2;
+    for (let j = 0; j < 6; j += 1) {
+      const t0 = (j / 6) * 0.8;
+      const t1 = ((j + 1) / 6) * 0.8;
+      ribs.push(Math.cos(a) * R * Math.sin(t0), R - R * Math.cos(t0) + 0.03, Math.sin(a) * R * Math.sin(t0), Math.cos(a) * R * Math.sin(t1), R - R * Math.cos(t1) + 0.03, Math.sin(a) * R * Math.sin(t1));
+    }
+  }
+  lines(ribs, LINE_SOFT, tilt);
+  [0.35, 0.6].forEach((f) => circle(R * Math.sin(0.8 * f), R - R * Math.cos(0.8 * f) + 0.03, LINE_SOFT, tilt, 48));
   const rimR = R * Math.sin(0.8);
   const rimY = R - R * Math.cos(0.8);
   circle(rimR, rimY, LINE, tilt, 64);
+  const lip = mesh(new THREE.TorusGeometry(rimR, 0.09, 6, 48), M.mid, 0, rimY, 0, tilt, { edges: false, cast: false });
+  lip.rotation.x = Math.PI / 2;
   const focus = rimY + R * 0.55;
   const struts = [];
   for (let k = 0; k < 3; k += 1) {
@@ -865,7 +954,13 @@ function build() {
     struts.push(Math.cos(a) * rimR, rimY, Math.sin(a) * rimR, 0, focus, 0);
   }
   lines(struts, LINE, tilt);
-  mesh(new THREE.CylinderGeometry(0.16, 0.34, 0.6, 12), M.light, 0, focus - 0.3, 0, tilt, { edges: false, cast: false }); // feed horn
+  for (let k = 0; k < struts.length; k += 6) {
+    const a = new THREE.Vector3(struts[k], struts[k + 1], struts[k + 2]);
+    const b = new THREE.Vector3(struts[k + 3], struts[k + 4], struts[k + 5]);
+    const rod = mesh(new THREE.CylinderGeometry(0.07, 0.07, a.distanceTo(b), 6), M.mid, (a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2, tilt, { edges: false, cast: false });
+    rod.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  }
+  mesh(new THREE.CylinderGeometry(0.28, 0.6, 1.1, 16), M.light, 0, focus - 0.55, 0, tilt, { edges: false, cast: false }); // feed horn
   animators.push((t) => { dish.rotation.y = Math.sin(t * 0.25) * 1.2; });
   // radio waves rising off the dish
   const waves = [0, 0.5].map((phase) => {
@@ -875,19 +970,20 @@ function build() {
   });
   animators.push((t) => waves.forEach((w) => {
     const p = (t * 0.45 + w.phase) % 1;
-    w.ring.position.set(2, 12.5 + p * 7, -8);
+    w.ring.position.set(2.5, 12.5 + p * 7, -11);
     w.ring.scale.setScalar(1.5 + p * 6);
     w.mat.opacity = 0.5 * (1 - p);
   }));
   const deskTop = world(lab, 0, 7.4, 0);
   anchor('desk', 'LLM SCANNER', deskTop.x, deskTop.y, deskTop.z);
-  const radioTop = world(lab, 2, 12.8, -8);
+  const radioTop = world(lab, 2.5, 12.8, -11);
   anchor('radio', 'RADIO PI', radioTop.x, radioTop.y, radioTop.z);
   // a desktop 3D printer on its own stand: bed sliding back and forth, gantry climbing a layer at a time,
   // print head with its nozzle, lead screws, a filament spool on top feeding the head, and the print growing
-  box(3.8, 2.4, 3.8, -3.2, 0, -5.6, M.dark, lab);
+  box(4.6, 2.4, 4.6, -3.2, 0, -5.6, M.dark, lab);
   const printer = new THREE.Group();
   printer.position.set(-3.2, 2.4, -5.6);
+  printer.scale.setScalar(1.25);
   lab.add(printer);
   box(3.6, 0.55, 3.6, 0, 0, 0, M.mid, printer);
   box(0.06, 0.32, 1.1, -1.82, 0.12, 0.9, M.glow, printer, { edges: false, cast: false }); // the control screen
@@ -899,7 +995,7 @@ function build() {
   lines([-1.45, 0.15, -1.45, 1.45, 0.15, 1.45, -1.45, 0.15, 1.45, 1.45, 0.15, -1.45].map((n, i) => n * (i % 3 === 1 ? 1 : 0.0)), LINE_FAINT, bedGroup);
   const printGeo = new THREE.CylinderGeometry(0.5, 0.72, 1, 20, 10);
   printGeo.translate(0, 0.5, 0);
-  const print = mesh(printGeo, M.glow, 0, 0.14, 0, bedGroup, { line: LINE_SOFT });
+  const print = mesh(printGeo, M.dark, 0, 0.14, 0, bedGroup, { line: LINE });
   // the upright frame: two towers and a top bar, straddling the bed
   [-1.62, 1.62].forEach((z) => {
     box(0.26, 4.6, 0.3, 0.2, 0.55, z, M.dark, printer);
@@ -942,7 +1038,7 @@ function build() {
     filamentPts.set([0.2, 5.9, 0.6, head.position.x, head.position.y, head.position.z]);
     filamentGeo.attributes.position.needsUpdate = true;
   });
-  const printerTop = world(lab, -3.2, 10.2, -5.6);
+  const printerTop = world(lab, -3.2, 11.6, -5.6);
   anchor('printer', '3D PRINTER', printerTop.x, printerTop.y, printerTop.z);
 
   // ---------- 10 Off the clock: a giant retro handheld playing snake at the edge of town ----------
@@ -973,8 +1069,8 @@ function build() {
   };
   stick(-5.6, 5.6);
   stick(5.6, 2.9);
-  box(0.25, 0.55, 1.7, -0.9, 3.0, -5.6, M.dark, handheld, { cast: false });
-  box(0.25, 1.7, 0.55, -0.9, 2.42, -5.6, M.dark, handheld, { cast: false });
+  box(0.3, 0.55, 1.7, -0.92, 3.0, -5.6, M.mid, handheld, { cast: false, line: LINE_SOFT });
+  box(0.3, 1.7, 0.55, -0.92, 2.42, -5.6, M.mid, handheld, { cast: false, line: LINE_SOFT });
   [[0, 0.65], [0, -0.65], [0.65, 0], [-0.65, 0]].forEach(([dy, dz]) => {
     mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.25, 16), M.dark, -0.92, 5.6 + dy, 5.6 + dz, handheld, { edges: false, cast: false }).rotation.z = Math.PI / 2;
   });
@@ -1096,7 +1192,7 @@ function build() {
     'ch-02': { target: at(0, 40, 13), az: 38, el: 26, dist: 70, labels: ['inet', 'cf'] },
     'ch-03': { target: at(26, 14, 4), az: 82, el: 32, dist: 50, labels: ['gw', 'dns'] },
     'ch-04': { target: at(90, 25, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
-    'ch-05': { target: at(135, 27, 3), az: 170, el: 32, dist: 30, labels: ['mc'] },
+    'ch-05': { target: at(135, 27, 3), az: 170, el: 28, dist: 23, labels: ['mc'] },
     'ch-06': { target: at(180, 27, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi', 'stage'] },
     'ch-07': { target: at(225, 27, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
     'ch-08': { target: at(315, 25, 6), az: 345, el: 26, dist: 32, labels: ['svc'] },
@@ -1379,10 +1475,15 @@ function build() {
   [[1, 15], [7.6, 15]].forEach(([x, y]) => roof.push(x, y, -10, x, y, 10));
   for (let z = -10; z <= 10; z += 2.5) roof.push(1, 15, z, 7.6, 15, z, 1, 15, z, 7.6, 15, z + 2.5);
   lines(roof, LINE, stage);
+  box(7.4, 0.5, 21, 4.3, 15, 0, M.dark, stage); // roof canopy
+  for (let z = -7.5; z <= 7.5; z += 2.5) {
+    const spot = mesh(new THREE.CylinderGeometry(0.28, 0.42, 0.8, 12), M.light, 1.6, 14.4, z, stage, { edges: false, cast: false });
+    spot.rotation.z = -0.6;
+  }
   [-8.6, 8.6].forEach((z) => {
     lines([1.6, 15, z, 1.6, 12.6, z], LINE_SOFT, stage);
     for (let k = 0; k < 6; k += 1) {
-      const cab = box(1.3, 0.75, 1.9, 1.6 - k * 0.08, 12.4 - k * 0.78, z, M.dark, stage, { cast: false });
+      const cab = box(1.3, 0.75, 1.9, 1.6 - k * 0.08, 12.4 - k * 0.78, z, M.mid, stage, { cast: false });
       cab.rotation.z = -0.05 * k; // the array curves as it hangs
       box(0.04, 0.5, 1.6, 0.93 - k * 0.08, 12.55 - k * 0.78, z, M.mid, stage, { edges: false, cast: false });
     }
@@ -1412,9 +1513,11 @@ function build() {
     const r = 2 + rand() * 11;
     people.push({ x: -1.2 - Math.cos(a) * r, z: Math.sin(a) * r * 1.15, phase: rand() * 6, h: 0.75 + rand() * 0.3 });
   }
-  const crowd = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 1, 0.34), M.light, people.length);
+  const crowd = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 1, 0.34), M.mid, people.length);
   crowd.castShadow = true;
   stage.add(crowd);
+  const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.22, 8, 6), M.light, people.length);
+  stage.add(heads);
   let wallClock = -1;
   animators.push((t) => {
     if (t - wallClock > 1 / 20) {
@@ -1438,7 +1541,12 @@ function build() {
       tmp.scale.set(1, p.h, 1);
       tmp.updateMatrix();
       crowd.setMatrixAt(i, tmp.matrix);
+      tmp.position.y += p.h * 0.5 + 0.2;
+      tmp.scale.set(1, 1, 1);
+      tmp.updateMatrix();
+      heads.setMatrixAt(i, tmp.matrix);
     });
+    heads.instanceMatrix.needsUpdate = true;
     tmp.scale.set(1, 1, 1);
     crowd.instanceMatrix.needsUpdate = true;
   });
@@ -1447,9 +1555,9 @@ function build() {
 
   // ---------- Satellites on tilted orbits ----------
   const panelTex = texture((g2, w, h) => {
-    g2.fillStyle = '#26282c';
+    g2.fillStyle = '#8c9096';
     g2.fillRect(0, 0, w, h);
-    g2.fillStyle = '#3a3d42';
+    g2.fillStyle = '#3f4349';
     for (let x = 2; x < w; x += 16) for (let y = 2; y < h; y += 16) g2.fillRect(x, y, 13, 13); // individual cells
     g2.fillStyle = '#9a9ea4';
     g2.fillRect(0, 0, w, 2);
@@ -1466,7 +1574,7 @@ function build() {
       g2.fillRect(rand() * w, rand() * h, 3 + rand() * 9, 1 + rand() * 3); // crinkled insulation foil
     }
   }, 64, 64);
-  const foilMat = std(0xffffff, { map: foilTex, metalness: 0.6, roughness: 0.4 });
+  const foilMat = std(0xffffff, { map: foilTex, metalness: 0.15, roughness: 0.45, emissive: 0x2a2a28 });
   const sats = [[78, 44, 0.35, 0.05], [96, 54, -0.28, -0.035], [66, 38, 0.12, 0.07]].map(([r, y, tilt, speed], i) => {
     const orbit = new THREE.Group();
     orbit.position.y = y;
@@ -1493,7 +1601,7 @@ function build() {
     dish.scale.set(1, 0.55, 1);
     dish.position.y = -2.4 - 1.5 * 0.55;
     lines([0, -3.2, 0, 0, -3.9, 0, 0.9, -3.4, 0.4, 0, -3.9, 0, -0.9, -3.4, -0.4, 0, -3.9, 0], LINE_SOFT, sat);
-    box(0.22, 0.3, 0.22, 0, -4.15, 0, M.light, sat, { edges: false, cast: false });
+    box(0.22, 0.3, 0.22, 0, -4.15, 0, M.glow, sat, { edges: false, cast: false });
     // whip antennas and a small sensor on the deck
     lines([0.6, 1.2, 0.6, 1.1, 3.0, 1.1, -0.6, 1.2, -0.6, -1.1, 3.0, -1.1], LINE, sat);
     mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.6, 12), M.light, 0.4, 1.5, -0.4, sat, { edges: false, cast: false });
