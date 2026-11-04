@@ -20,268 +20,375 @@
 
   <!-- PWA -->
   <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#1d1e20">
+  <meta name="theme-color" content="#1d1f21">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=Martian+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="loader" class="loader" hidden>
-    <div class="loader-inner">
-      <span class="mono">KADENTS</span>
-      <button class="loader-bar" id="loaderBar" type="button" aria-label="Loading"><i id="loaderFill"></i></button>
-      <span class="mono" id="loaderPct">Loading 0%</span>
-    </div>
-  </div>
+  <!-- The 3D city behind the chapters (city.js); the flat map below is the fallback without WebGL. -->
+  <canvas id="city" aria-hidden="true"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+  <div id="readout" aria-hidden="true"><span>Field width</span><b id="fieldWidth">0</b><i></i></div>
+  <svg id="scene" aria-hidden="true" preserveAspectRatio="xMidYMid meet"></svg>
 
-  <header class="topbar">
-    <a class="topbar-mark mono" href="#top">KADENTS</a>
-    <div class="modes" role="group" aria-label="Reading version">
-      <button type="button" data-mode-btn="eli5">ELI5 <kbd>1</kbd></button>
-      <button type="button" data-mode-btn="tech">Technical <kbd>2</kbd></button>
-      <button type="button" data-mode-btn="comm">Commentary <kbd>3</kbd></button>
+  <nav id="rail" aria-label="Chapters">
+    <p class="mark">KADENTS</p>
+    <div class="group">
+      <p class="head">Content type</p>
+      <div class="vers" role="group" aria-label="Reading version">
+        <button type="button" data-mode-btn="eli5">ELI5</button>
+        <button type="button" data-mode-btn="tech">Technical</button>
+        <button type="button" data-mode-btn="comm">Commentary</button>
+        <span class="vers-mark" aria-hidden="true"></span>
+      </div>
     </div>
-    <nav class="topbar-links mono">
-      <a href="#services">Services</a>
-      <button type="button" id="eggBtn">Eggs 0/13</button>
-    </nav>
+    <div class="group">
+      <p class="head">Chapters</p>
+      <ol class="nav" id="index">
+        <li><button type="button" data-go="ch-01">Introduction</button></li>
+        <li><button type="button" data-go="ch-02">Front door</button></li>
+        <li><button type="button" data-go="ch-03">Network</button></li>
+        <li><button type="button" data-go="ch-04">Media</button></li>
+        <li><button type="button" data-go="ch-05">Minecraft</button></li>
+        <li><button type="button" data-go="ch-06">LED dashboard</button></li>
+        <li><button type="button" data-go="ch-07">Lab bench</button></li>
+        <li><button type="button" data-go="ch-08">Services</button></li>
+      </ol>
+      <span class="idx-mark" aria-hidden="true"></span>
+    </div>
+    <div class="group">
+      <p class="head">Extras</p>
+      <ol class="nav circle">
+        <li><button type="button" data-go="ch-08">Quick launch</button></li>
+        <li><button type="button" id="eggBtn">Eggs 0/13</button></li>
+        <li><a href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Launcher</a></li>
+      </ol>
+    </div>
+    <p class="sign">KADENTSv<span>3.0.0</span></p>
+  </nav>
+
+  <header id="bar">
+    <strong>KADENTS</strong>
+    <div class="vers" role="group" aria-label="Reading version">
+      <button type="button" data-mode-btn="eli5">ELI5</button>
+      <button type="button" data-mode-btn="tech">Tech</button>
+      <button type="button" data-mode-btn="comm">Comm</button>
+    </div>
   </header>
 
-  <main id="top">
-    <section class="hero" aria-labelledby="title">
-      <div class="hero-copy">
-        <h1 id="title">KADENTS</h1>
-        <p class="mono hero-sub">A visual representation of my homelab and the services it runs</p>
-      </div>
+  <main>
+    <section class="landing" id="top" aria-labelledby="title">
+      <button class="loadline" id="loaderBar" type="button" tabindex="-1" aria-hidden="true"><span id="loaderPct">Loading 0%</span><i id="loaderFill"></i></button>
+      <h1 id="title">KADENTS</h1>
+      <p class="sub">A visual representation of my homelab and the services it runs</p>
 
-      <figure class="schematic" id="schematic">
-        <svg viewBox="0 0 560 372" role="img" aria-labelledby="schemTitle">
-          <title id="schemTitle">Map of the homelab: internet, Cloudflare, gateway, seven machines, and the services they run</title>
+      <div class="drawing">
+        <svg id="map" viewBox="0 0 560 372" role="img" aria-labelledby="mapTitle">
+          <title id="mapTitle">Map of the homelab: internet, Cloudflare, gateway, seven machines, and the services they run</title>
           <g class="wires">
             <path d="M33 22H96V48" />
             <path d="M96 70V92" />
             <path d="M530 102H542" />
             <path d="M109 112V134M171 112V134M233 112V134M295 112V134M357 112V134M419 112V134M481 112V134" />
             <path d="M109 190V212M171 190V212M233 190V212M295 190V212M357 190V212M419 190V212M481 190V212" />
-            <path d="M111 220V242M153 220V242M195 220V242M305 220V242M460 220V250" />
+            <path d="M251 220V242M287 220V242M323 220V242M400 220V242M500 220V258" />
           </g>
-          <g class="node" data-go="ch-02" data-label="Internet. Everything starts out here."><circle cx="22" cy="22" r="11" /></g>
-          <g class="node" data-go="ch-02" data-label="Cloudflare edge. The front door and its bouncer."><rect x="85" y="48" width="22" height="22" /></g>
-          <g class="node" data-go="ch-03" data-label="Gateway. Routing, firewall and addresses."><rect x="80" y="92" width="450" height="20" /></g>
-          <g class="node rogue" data-egg="rogue" data-label="Unknown device."><circle cx="546" cy="102" r="3.5" /></g>
-          <g class="node" data-go="ch-07" data-label="Desktop. The lab bench."><rect x="92" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-04" data-label="Media server. Runs the apps."><rect x="154" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-04" data-label="NAS. The big box of drives."><rect x="216" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-03" data-label="DNS Pi. Blocks ads for the whole house."><rect x="278" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-02" data-label="Services Pi. Small always-on helpers."><rect x="340" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-06" data-label="LED Pi. Drives the 64×64 matrix."><rect x="402" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-07" data-label="Radio Pi. Listens to the airwaves."><rect x="464" y="134" width="34" height="56" /></g>
-          <g class="node" data-go="ch-04" data-label="Bus. How the machines share work."><rect x="80" y="212" width="450" height="8" /></g>
-          <g class="node" data-go="ch-04" data-label="Jellyfin. Your own streaming service."><rect x="100" y="242" width="22" height="112" /></g>
-          <g class="node" data-go="ch-04" data-label="Seerr. The suggestion box."><rect x="142" y="242" width="22" height="112" /></g>
-          <g class="node" data-go="ch-05" data-label="Minecraft. A world that's always on." id="mcNode"><rect x="184" y="242" width="22" height="112" /></g>
-          <g class="node" data-go="ch-06" data-label="LED matrix. 4,096 tiny lights.">
-            <rect x="250" y="242" width="112" height="112" />
-            <path class="grid" d="M264 242V354M278 242V354M292 242V354M306 242V354M320 242V354M334 242V354M348 242V354M250 256H362M250 270H362M250 284H362M250 298H362M250 312H362M250 326H362M250 340H362" />
+          <g class="node" data-id="inet" data-go="ch-02" data-label="Internet. Everything starts out here."><circle cx="22" cy="22" r="11" /></g>
+          <g class="node" data-id="cf" data-go="ch-02" data-label="Cloudflare edge. The front door and its bouncer."><rect x="85" y="48" width="22" height="22" /></g>
+          <g class="node" data-id="gw" data-go="ch-03" data-label="Gateway. Routing, firewall and addresses."><rect x="80" y="92" width="450" height="20" /></g>
+          <g class="node rogue" data-id="rogue" data-egg="rogue" data-label="Unknown device."><circle cx="546" cy="102" r="3.5" /></g>
+          <g class="node" data-id="desk" data-go="ch-07" data-label="Desktop. The lab bench."><rect x="92" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="media" data-go="ch-04" data-label="Media server. Runs the apps."><rect x="154" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="nas" data-go="ch-04" data-label="NAS. The big box of drives."><rect x="216" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="dns" data-go="ch-03" data-label="DNS Pi. Blocks ads for the whole house."><rect x="278" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="svc" data-go="ch-02" data-label="Services Pi. Small always-on helpers."><rect x="340" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="ledpi" data-go="ch-06" data-label="LED Pi. Drives the 64×64 matrix."><rect x="402" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="radio" data-go="ch-07" data-label="Radio Pi. Listens to the airwaves."><rect x="464" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="bus" data-go="ch-04" data-label="Bus. How the machines share work."><rect x="80" y="212" width="450" height="8" /></g>
+          <g class="node" data-id="jelly" data-go="ch-04" data-label="Jellyfin. Your own streaming service."><rect x="240" y="242" width="22" height="112" /></g>
+          <g class="node" data-id="seerr" data-go="ch-04" data-label="Seerr. The suggestion box."><rect x="276" y="242" width="22" height="112" /></g>
+          <g class="node" data-id="mc" data-go="ch-05" data-label="Minecraft. A world that's always on."><rect x="312" y="242" width="22" height="112" /></g>
+          <g class="node" data-id="led" data-go="ch-06" data-label="LED matrix. 4,096 tiny lights.">
+            <rect x="350" y="242" width="100" height="100" />
+            <path class="grid" d="M362.5 242V342M375 242V342M387.5 242V342M400 242V342M412.5 242V342M425 242V342M437.5 242V342M350 254.5H450M350 267H450M350 279.5H450M350 292H450M350 304.5H450M350 317H450M350 329.5H450" />
           </g>
-          <g class="node" data-go="services" data-label="Launcher. Every service behind one door."><circle cx="460" cy="302" r="52" /></g>
+          <g class="node" data-id="launch" data-go="ch-08" data-label="Launcher. Every service behind one door."><circle cx="500" cy="302" r="44" /></g>
+          <g class="labels">
+            <text data-for="inet" x="38" y="16">INTERNET</text>
+            <text data-for="cf" x="112" y="62">CLOUDFLARE</text>
+            <text data-for="gw" x="80" y="88">GATEWAY</text>
+            <text data-for="desk" class="v" transform="translate(113 186) rotate(-90)">DESKTOP</text>
+            <text data-for="media" class="v" transform="translate(175 186) rotate(-90)">MEDIA</text>
+            <text data-for="nas" class="v" transform="translate(237 186) rotate(-90)">NAS</text>
+            <text data-for="dns" class="v" transform="translate(299 186) rotate(-90)">DNS PI</text>
+            <text data-for="svc" class="v" transform="translate(361 186) rotate(-90)">HELPERS</text>
+            <text data-for="ledpi" class="v" transform="translate(423 186) rotate(-90)">LED PI</text>
+            <text data-for="radio" class="v" transform="translate(485 186) rotate(-90)">RADIO PI</text>
+            <text data-for="bus" x="80" y="232">BUS</text>
+            <text data-for="jelly" class="v" transform="translate(255 350) rotate(-90)">JELLYFIN</text>
+            <text data-for="seerr" class="v" transform="translate(291 350) rotate(-90)">SEERR</text>
+            <text data-for="mc" class="v" transform="translate(327 350) rotate(-90)">MINECRAFT</text>
+            <text data-for="led" x="350" y="356">64×64 LED</text>
+            <text data-for="launch" x="500" y="305" text-anchor="middle">LAUNCHER</text>
+          </g>
         </svg>
-        <figcaption class="mono" id="schemCap">Hover or tap a part of the map.</figcaption>
-      </figure>
+
+        <div class="choose" role="group" aria-label="Choose a version">
+          <button type="button" data-mode-btn="eli5" data-start>ELI5 version<kbd>1</kbd></button>
+          <button type="button" data-mode-btn="tech" data-start>Technical version<kbd>2</kbd></button>
+          <button type="button" data-mode-btn="comm" data-start>Commentary version<kbd>3</kbd></button>
+        </div>
+      </div>
+      <p class="caption" id="schemCap">Hover or tap a part of the map.</p>
     </section>
 
-    <section class="services" id="services" aria-labelledby="services-title">
-      <div class="section-head mono"><span>00</span><span>Services</span></div>
-      <h2 id="services-title">Quick launch</h2>
-
-      <div class="status-bar" aria-label="Live service health">
-        <div class="status-chip" id="nas-status" role="status" aria-live="polite" tabindex="0">Checking NAS...</div>
-        <div class="status-chip" id="mc-status" role="status" aria-live="polite" tabindex="0">Checking Minecraft server...</div>
+    <section class="stage" id="ch-01" data-focus="-20 -24 600 420" data-lit="all">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">01</span><span class="t">Introduction</span></header>
+          <h2>A homelab, drawn as a map <span class="m">of the machines that run it</span></h2>
+          <p>A homelab is a handful of computers at home doing jobs people usually rent from big companies: storing files, streaming movies, running a game server.</p>
+          <p>Each shape on this map is one machine or service. The lines show how they connect.</p>
+          <p>The next seven chapters walk through it, one part at a time.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">01</span><span class="t">Introduction</span></header>
+          <div class="origin"><span>Runs on</span><b>7 machines · 1 gateway</b></div>
+          <h2>A small self-hosted stack with one way in</h2>
+          <p>A Windows workstation, an Ubuntu server, a Synology NAS and a set of Raspberry Pis sit behind one gateway. Public apps are published through Cloudflare, never through open ports.</p>
+          <div class="flow">Browser → Cloudflare edge → Access policy → tunnel → app</div>
+          <ul class="tech-list">
+            <li><b>Ingress:</b> Cloudflare Tunnel, with no inbound port forwards.</li>
+            <li><b>Auth:</b> Cloudflare Access single sign-on in front of private apps.</li>
+            <li><b>This page:</b> static HTML on GitHub Pages. The status checks run in your browser.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">01</span><span class="t">Introduction</span></header>
+          <div class="chat">
+            <div class="msg you"><p>Is everything up?</p></div>
+            <div class="msg them"><p>NAS is online. Minecraft is sleeping. Nothing is on fire.</p></div>
+          </div>
+          <p>I'm a cyber security analyst, and this is where I practice. Most of it started as "I wonder if I can host that myself," and a surprising amount of it worked. Some of it broke at 2 a.m. That's part of it too.</p>
+        </div></div>
       </div>
-
-      <ul class="rows">
-        <li class="row row--launcher">
-          <div class="row-name"><strong>Launcher</strong><span class="mono">Single sign-on · every Kadents service behind one door</span></div>
-          <div class="row-actions"><a class="btn primary" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open Launcher &rarr;</a></div>
-        </li>
-        <li class="row">
-          <div class="row-name"><strong>Jellyfin</strong><span class="mono">fin.kadents.com</span></div>
-          <div class="row-actions">
-            <a class="btn primary" href="https://fin.kadents.com" target="_blank" rel="noopener">Open</a>
-            <button class="btn ghost" type="button" data-copy="https://fin.kadents.com">Copy Link</button>
-          </div>
-        </li>
-        <li class="row">
-          <div class="row-name"><strong>Seerr</strong><span class="mono">seerr.kadents.com</span></div>
-          <div class="row-actions">
-            <a class="btn primary" href="https://seerr.kadents.com" target="_blank" rel="noopener">Open</a>
-            <button class="btn ghost" type="button" data-copy="https://seerr.kadents.com">Copy Link</button>
-          </div>
-        </li>
-        <li class="row">
-          <div class="row-name"><strong>Synology</strong><span class="mono">kadn.quickconnect.to</span></div>
-          <div class="row-actions">
-            <a class="btn primary" href="https://kadn.quickconnect.to" target="_blank" rel="noopener">Open</a>
-            <button class="btn ghost" type="button" data-copy="https://kadn.quickconnect.to">Copy Link</button>
-          </div>
-        </li>
-        <li class="row">
-          <div class="row-name"><strong>Minecraft</strong><span class="mono">Java mc.kadents.com · Bedrock play.kadents.com</span></div>
-          <div class="row-actions">
-            <button class="btn primary" type="button" data-copy="mc.kadents.com">Copy Java Address</button>
-            <button class="btn ghost" type="button" data-copy="play.kadents.com">Copy Bedrock Address</button>
-          </div>
-        </li>
-      </ul>
     </section>
 
-    <article class="chapter" id="ch-01">
-      <div class="section-head mono"><span>01</span><span>Introduction</span></div>
-      <h2>A homelab, drawn as a map</h2>
-      <div class="v v-eli5">
-        <p>A homelab is a handful of computers at home doing jobs people usually rent from big companies: storing files, streaming movies, running a game server.</p>
-        <p>This page is a map of mine. Each shape above is one machine or service, and the lines show how they connect. Tap a part of the map, or keep scrolling.</p>
+    <section class="stage" id="ch-02" data-focus="0 -6 260 150" data-lit="inet cf gw svc">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">02</span><span class="t">Front door</span></header>
+          <h2>One door <span class="m">with a bouncer</span></h2>
+          <p>Before anyone reaches a service, they come through one front door. A bouncer at that door checks who you are.</p>
+          <p>If you're on the list, you get in. If you're not, you never even see what's inside.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">02</span><span class="t">Front door</span></header>
+          <div class="origin"><span>Runs on</span><b>Cloudflare</b></div>
+          <h2>Outbound tunnels and an identity check at the edge</h2>
+          <p>Cloudflare Tunnel connects outbound from inside the network, so nothing listens on the home IP. Cloudflare Access puts single sign-on in front of each private app.</p>
+          <ul class="tech-list">
+            <li><b>Launcher:</b> lists every app a signed-in user may open.</li>
+            <li><b>Domain:</b> DNSSEC on, DMARC enforced.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">02</span><span class="t">Front door</span></header>
+          <p>The tunnel was the moment this stopped feeling scary. Nothing is exposed at home, and I can still reach everything from anywhere.</p>
+        </div></div>
       </div>
-      <div class="v v-tech">
-        <p>A small self-hosted stack: a Windows workstation, an Ubuntu server, a Synology NAS and a set of Raspberry Pis behind one gateway.</p>
-        <dl class="facts mono">
-          <div><dt>Ingress</dt><dd>Cloudflare Tunnel, no inbound port forwards</dd></div>
-          <div><dt>Auth</dt><dd>Cloudflare Access single sign-on</dd></div>
-          <div><dt>This page</dt><dd>Static HTML on GitHub Pages; status checks run in your browser</dd></div>
-        </dl>
-      </div>
-      <div class="v v-comm">
-        <p>I'm a cyber security analyst, and this is where I practice. Most of it started as "I wonder if I can host that myself," and a surprising amount of it worked.</p>
-        <p>Some of it broke at 2 a.m. That's part of it too.</p>
-      </div>
-    </article>
+    </section>
 
-    <article class="chapter" id="ch-02">
-      <div class="section-head mono"><span>02</span><span>The front door</span></div>
-      <h2>One door, checked by a bouncer</h2>
-      <div class="v v-eli5">
-        <p>Before anyone reaches a service, they come through one front door. A bouncer at that door checks who you are.</p>
-        <p>If you're on the list, you get in. If you're not, you never even see what's inside.</p>
+    <section class="stage" id="ch-03" data-focus="60 70 490 140" data-lit="gw dns">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">03</span><span class="t">Network</span></header>
+          <h2>Quiet traffic control <span class="m">for every device</span></h2>
+          <p>Every device at home asks for directions before it goes anywhere online. A tiny computer answers those questions, and it refuses to give directions to ads and trackers.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">03</span><span class="t">Network</span></header>
+          <div class="origin"><span>Runs on</span><b>Pi-hole + Unbound</b></div>
+          <h2>Filtered, recursive DNS for the whole network</h2>
+          <p>The gateway handles routing and DHCP. DNS goes to Pi-hole, which forwards to Unbound as a local recursive resolver.</p>
+          <div class="flow">Device → Pi-hole → Unbound → root servers</div>
+          <ul class="tech-list">
+            <li><b>Result:</b> no third-party DNS provider, and ad and tracker domains are blocked for every device.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">03</span><span class="t">Network</span></header>
+          <p>The day I turned on network-wide blocking, everything in the house got faster. Nobody noticed, which is exactly how infrastructure should work.</p>
+        </div></div>
       </div>
-      <div class="v v-tech">
-        <p>Cloudflare Tunnel connects outbound from inside the network, so nothing listens on the home IP. Cloudflare Access puts single sign-on in front of each private app, and the Launcher lists every app a signed-in user may open.</p>
-        <dl class="facts mono">
-          <div><dt>Path</dt><dd>Browser &rarr; Cloudflare edge &rarr; Access policy &rarr; tunnel &rarr; app</dd></div>
-          <div><dt>Domain</dt><dd>DNSSEC on, DMARC enforced</dd></div>
-        </dl>
-      </div>
-      <div class="v v-comm">
-        <p>The tunnel was the moment this stopped feeling scary. Nothing is exposed at home, and I can still reach everything from anywhere.</p>
-      </div>
-      <p><a class="btn ghost" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open the Launcher &rarr;</a></p>
-    </article>
+    </section>
 
-    <article class="chapter" id="ch-03">
-      <div class="section-head mono"><span>03</span><span>The network</span></div>
-      <h2>Quiet traffic control</h2>
-      <div class="v v-eli5">
-        <p>Every device at home asks for directions before it goes anywhere online. A tiny computer answers those questions, and it refuses to give directions to ads and trackers.</p>
+    <section class="stage" id="ch-04" data-focus="120 110 220 260" data-lit="media nas bus jelly seerr">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">04</span><span class="t">Media</span></header>
+          <h2>Movie night <span class="m">that never buffers</span></h2>
+          <p>The NAS is a big box of hard drives. Jellyfin turns what's on it into your own streaming service.</p>
+          <p>Seerr is the suggestion box, where you ask for something new.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">04</span><span class="t">Media</span></header>
+          <div class="origin"><span>Runs on</span><b>Synology NAS · media server</b></div>
+          <h2>Library storage, playback and requests</h2>
+          <p>Media lives on the Synology NAS. Jellyfin serves libraries and playback; Seerr takes requests and shows their progress.</p>
+          <ul class="tech-list">
+            <li><b>Status:</b> the NAS chip checks Jellyfin's health endpoint from your browser.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">04</span><span class="t">Media</span></header>
+          <p>This is the part my friends actually use. They don't care how it works. They care that it works.</p>
+        </div></div>
       </div>
-      <div class="v v-tech">
-        <p>The gateway handles routing and DHCP. DNS goes to Pi-hole, which forwards to Unbound as a local recursive resolver. Lookups don't depend on a third-party DNS provider, and ad and tracker domains are blocked for every device on the network.</p>
-        <dl class="facts mono">
-          <div><dt>Query</dt><dd>Device &rarr; Pi-hole &rarr; Unbound &rarr; root servers</dd></div>
-        </dl>
-      </div>
-      <div class="v v-comm">
-        <p>The day I turned on network-wide blocking, everything in the house got faster. Nobody noticed, which is exactly how infrastructure should work.</p>
-      </div>
-    </article>
+    </section>
 
-    <article class="chapter" id="ch-04">
-      <div class="section-head mono"><span>04</span><span>Media</span></div>
-      <h2>Movie night that never buffers</h2>
-      <div class="v v-eli5">
-        <p>The NAS is a big box of hard drives. Jellyfin turns what's on it into your own streaming service, and Seerr is the suggestion box where you ask for something new.</p>
+    <section class="stage" id="ch-05" data-focus="220 180 220 190" data-lit="mc bus">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">05</span><span class="t">Minecraft</span></header>
+          <h2>A world <span class="m">that's always on</span></h2>
+          <p>A computer at home runs a Minecraft world all day. Friends can join from a PC, a phone or a console.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">05</span><span class="t">Minecraft</span></header>
+          <div class="origin"><span>Runs on</span><b>Java + Bedrock</b></div>
+          <h2>One server for both editions</h2>
+          <p>The status line asks three public server-status APIs in turn, then lists who's online.</p>
+          <ul class="tech-list">
+            <li><b>Java:</b> <button class="link-button" type="button" data-copy="mc.kadents.com">mc.kadents.com</button></li>
+            <li><b>Bedrock:</b> <button class="link-button" type="button" data-copy="play.kadents.com">play.kadents.com</button></li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">05</span><span class="t">Minecraft</span></header>
+          <p>Running a game server for friends taught me more about uptime than any class did.</p>
+        </div></div>
       </div>
-      <div class="v v-tech">
-        <p>Media lives on the Synology NAS. Jellyfin serves libraries and playback; Seerr takes requests and shows their progress. The NAS status chip checks Jellyfin's health endpoint from your browser.</p>
-      </div>
-      <div class="v v-comm">
-        <p>This is the part my friends actually use. They don't care how it works. They care that it works.</p>
-      </div>
-      <p><a class="btn ghost" href="#services">Go to Jellyfin and Seerr &rarr;</a></p>
-    </article>
+    </section>
 
-    <article class="chapter" id="ch-05">
-      <div class="section-head mono"><span>05</span><span>Minecraft</span></div>
-      <h2>A world that's always on</h2>
-      <div class="v v-eli5">
-        <p>A computer at home runs a Minecraft world all day. Friends can join from a PC, a phone or a console.</p>
-      </div>
-      <div class="v v-tech">
-        <p>One server takes both Java Edition and Bedrock Edition players. The status line asks three public server-status APIs in turn, then lists who's online.</p>
-        <dl class="facts mono">
-          <div><dt>Java</dt><dd><button class="link-button" type="button" data-copy="mc.kadents.com">mc.kadents.com</button></dd></div>
-          <div><dt>Bedrock</dt><dd><button class="link-button" type="button" data-copy="play.kadents.com">play.kadents.com</button></dd></div>
-        </dl>
-      </div>
-      <div class="v v-comm">
-        <p>Running a game server for friends taught me more about uptime than any class did.</p>
-      </div>
-    </article>
-
-    <article class="chapter chapter--figure" id="ch-06">
-      <div class="chapter-text">
-        <div class="section-head mono"><span>06</span><span>LED dashboard</span></div>
-        <h2>A 64×64 window into the lab</h2>
-        <div class="v v-eli5">
-          <p>A board of 4,096 tiny lights hangs on the wall and shows the time and whatever else I tell it to. The one here is a copy you can poke.</p>
-        </div>
-        <div class="v v-tech">
-          <p>A 64×64 HUB75 RGB matrix driven by a Raspberry Pi 4. It renders clocks, scrolling text and status panels. The version on this page is a software copy drawn on a canvas.</p>
-        </div>
-        <div class="v v-comm">
+    <section class="stage" id="ch-06" data-focus="330 116 230 254" data-lit="ledpi led">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">06</span><span class="t">LED dashboard</span></header>
+          <h2>4,096 tiny lights <span class="m">on the wall</span></h2>
+          <p>A board of tiny lights shows the time and whatever else I tell it to. The copy below works. Click it.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">06</span><span class="t">LED dashboard</span></header>
+          <div class="origin"><span>Runs on</span><b>Raspberry Pi 4</b></div>
+          <h2>A 64×64 HUB75 matrix driven by a Pi</h2>
+          <p>It renders clocks, scrolling text and status panels. The copy below is a software version drawn on a canvas.</p>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">06</span><span class="t">LED dashboard</span></header>
           <p>My favorite project. It's useless in the best way.</p>
-        </div>
+        </div></div>
       </div>
-      <figure class="led">
+      <figure class="panel led">
         <canvas id="led" width="320" height="320" aria-label="Simulated LED matrix. Click to change what it shows."></canvas>
-        <figcaption class="mono">Click to change mode</figcaption>
+        <figcaption>Click to change mode</figcaption>
       </figure>
-    </article>
+    </section>
 
-    <article class="chapter" id="ch-07">
-      <div class="section-head mono"><span>07</span><span>The lab bench</span></div>
-      <h2>Breaking things on purpose</h2>
-      <div class="v v-eli5">
-        <p>Security people learn by trying to break things, safely, on their own equipment. This is the corner of the lab where I do that, including testing whether AI chatbots can be tricked.</p>
+    <section class="stage" id="ch-07" data-focus="70 118 450 92" data-lit="desk radio">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">07</span><span class="t">Lab bench</span></header>
+          <h2>Breaking things <span class="m">on purpose</span></h2>
+          <p>Security people learn by trying to break things, safely, on their own equipment.</p>
+          <p>This corner of the lab is where I do that, including testing whether AI chatbots can be tricked.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">07</span><span class="t">Lab bench</span></header>
+          <div class="origin"><span>Runs on</span><b>Workstation · radio Pi</b></div>
+          <h2>Scanning, LLM red-teaming and radio</h2>
+          <ul class="tech-list">
+            <li><b>Scanning:</b> vulnerability scans of my own hosts and images.</li>
+            <li><b>LLM Scanner:</b> a Gradio front end that runs garak, Promptfoo and PyRIT against local models.</li>
+            <li><b>Radio:</b> a software-defined radio Pi listens to the airwaves.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">07</span><span class="t">Lab bench</span></header>
+          <p>Studying for Network+ and Security+ goes a lot faster when there's something real to poke at.</p>
+        </div></div>
       </div>
-      <div class="v v-tech">
-        <p>Vulnerability scanning of my own hosts and images, plus an LLM Scanner: a Gradio front end that runs garak, Promptfoo and PyRIT against local models to probe for prompt injection and jailbreaks. A software-defined radio Pi listens to the airwaves.</p>
+    </section>
+
+    <section class="stage" id="ch-08" data-focus="340 190 220 190" data-lit="launch">
+      <div class="panel services">
+        <header><span class="n">08</span><span class="t">Services</span></header>
+        <h2>Quick launch <span class="m">for everything here</span></h2>
+        <div class="status-bar" aria-label="Live service health">
+          <div class="status-chip" id="nas-status" role="status" aria-live="polite" tabindex="0">Checking NAS...</div>
+          <div class="status-chip" id="mc-status" role="status" aria-live="polite" tabindex="0">Checking Minecraft server...</div>
+        </div>
+        <ul class="rows">
+          <li class="row row--launcher">
+            <div class="row-name"><strong>Launcher</strong><span>Single sign-on for every service</span></div>
+            <div class="row-actions"><a class="btn primary" href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Open Launcher &rarr;</a></div>
+          </li>
+          <li class="row">
+            <div class="row-name"><strong>Jellyfin</strong><span>fin.kadents.com</span></div>
+            <div class="row-actions">
+              <a class="btn primary" href="https://fin.kadents.com" target="_blank" rel="noopener">Open</a>
+              <button class="btn ghost" type="button" data-copy="https://fin.kadents.com">Copy Link</button>
+            </div>
+          </li>
+          <li class="row">
+            <div class="row-name"><strong>Seerr</strong><span>seerr.kadents.com</span></div>
+            <div class="row-actions">
+              <a class="btn primary" href="https://seerr.kadents.com" target="_blank" rel="noopener">Open</a>
+              <button class="btn ghost" type="button" data-copy="https://seerr.kadents.com">Copy Link</button>
+            </div>
+          </li>
+          <li class="row">
+            <div class="row-name"><strong>Synology</strong><span>kadn.quickconnect.to</span></div>
+            <div class="row-actions">
+              <a class="btn primary" href="https://kadn.quickconnect.to" target="_blank" rel="noopener">Open</a>
+              <button class="btn ghost" type="button" data-copy="https://kadn.quickconnect.to">Copy Link</button>
+            </div>
+          </li>
+          <li class="row">
+            <div class="row-name"><strong>Minecraft</strong><span>Java mc.kadents.com · Bedrock play.kadents.com</span></div>
+            <div class="row-actions">
+              <button class="btn primary" type="button" data-copy="mc.kadents.com">Copy Java</button>
+              <button class="btn ghost" type="button" data-copy="play.kadents.com">Copy Bedrock</button>
+            </div>
+          </li>
+        </ul>
+        <footer class="foot">
+          <button type="button" class="counter" id="counter">Visitor <b id="digits">000000</b></button>
+          <button type="button" data-eggs>Eggs</button>
+          <button type="button" id="adminLink">/admin</button>
+          <span>&copy; 2025&ndash;2026 Kaden</span>
+        </footer>
       </div>
-      <div class="v v-comm">
-        <p>Studying for Network+ and Security+ goes a lot faster when there's something real to poke at.</p>
-      </div>
-    </article>
+    </section>
   </main>
 
-  <footer class="footer mono">
-    <span>KADENTS v3.0.0</span>
-    <button type="button" class="counter" id="counter">Visitor <b id="digits">000000</b></button>
-    <button type="button" id="adminLink">/admin</button>
-    <span>&copy; 2025&ndash;2026 Kaden</span>
-  </footer>
-
-  <form class="console mono" id="console" hidden>
+  <form class="console" id="console" hidden>
     <label for="cmd">&gt;</label>
     <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a word">
   </form>
 
-  <div id="toasts" class="toasts mono" aria-live="polite"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
   <div id="modal" class="modal" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
   <div id="plugin" class="plugin" hidden><div class="piece">?</div><p>This plugin isn't supported.</p></div>
-  <div id="saver" class="saver" hidden><span id="saverText" class="mono">KADENTS</span></div>
+  <div id="saver" class="saver" hidden><span id="saverText">KADENTS</span></div>
   <svg id="dog" class="dog" viewBox="0 0 60 40" hidden aria-hidden="true"><path d="M8 26C8 18 14 16 22 16H40L46 8L50 10L52 6L54 14C56 16 56 20 52 22H46L44 26M10 26L8 36M18 26L16 36M38 24L40 36M44 26L46 36M8 22L2 14" /><circle cx="51" cy="13" r="1" /></svg>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script type="module" src="main.js"></script>
   <script type="module" src="site.js"></script>
+  <script type="module" src="city.js"></script>
 </body>
 </html>
