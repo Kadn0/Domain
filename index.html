@@ -57,6 +57,7 @@
         <li><button type="button" data-go="ch-07">LLM Scanner</button></li>
         <li><button type="button" data-go="ch-08">Hardening</button></li>
         <li><button type="button" data-go="ch-09">Services</button></li>
+        <li><button type="button" data-go="ch-10">Off the clock</button></li>
       </ol>
       <span class="idx-mark" aria-hidden="true"></span>
     </div>
@@ -155,7 +156,7 @@
           <h2>A homelab, drawn as a map <span class="m">of the machines that run it</span></h2>
           <p>A homelab is a handful of computers at home doing jobs people usually rent from big companies: storing files, streaming movies, running a game server.</p>
           <p>Each shape on this map is one machine or service. The lines show how they connect.</p>
-          <p>The next eight chapters walk through it, one part at a time, including three projects I built here.</p>
+          <p>The next nine chapters walk through it, one part at a time, including three projects I built here.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
           <header><span class="n">01</span><span class="t">Introduction</span></header>
@@ -454,6 +455,33 @@
         </dl>
       </aside>
     </section>
+    <section class="stage" id="ch-10" data-focus="-20 -24 600 420" data-lit="all">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">10</span><span class="t">Off the clock</span></header>
+          <h2>Off the clock <span class="m">(mostly)</span></h2>
+          <p>When I'm not breaking things on purpose, I'm playing old games on handhelds, 3D printing parts for whatever I'm building next, listening to the airwaves with a software radio, and teaching the house to run itself.</p>
+          <p>Finley, my dog, supervises.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">10</span><span class="t">Off the clock</span></header>
+          <div class="origin"><span>Runs on</span><b>Spare evenings</b></div>
+          <h2>The hobbies that feed the lab</h2>
+          <ul class="tech-list">
+            <li><b>Retro gaming:</b> handhelds and emulation.</li>
+            <li><b>3D printing:</b> cases, mounts and brackets for the lab's hardware.</li>
+            <li><b>Radio:</b> a software-defined radio on its own Pi.</li>
+            <li><b>Smart home:</b> automations that mostly behave.</li>
+            <li><b>LED displays:</b> see chapter 06.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">10</span><span class="t">Off the clock</span></header>
+          <p>Finley is the only member of the lab without root access. He doesn't seem to mind.</p>
+          <p>Thanks for scrolling all the way down.</p>
+        </div></div>
+      </div>
+    </section>
   </main>
 
   <template id="projectsTpl">
@@ -465,6 +493,7 @@
       <li><button type="button" data-goto="ch-08"><b>Homelab hardening</b><span>Scripts that move every host to key-only SSH with an automatic rollback, then audit and probe them.</span><small>PowerShell · Bash · done</small></button></li>
       <li><button type="button" data-goto="ch-09"><b>kadents.com</b><span>This site: a 3D map of the lab and the front door to its services.</span><small>JavaScript · three.js · live</small></button></li>
     </ul>
+    <p class="now"><b>Now</b> Studying for Network+ and Security+, tuning the LED wall, and red-teaming local models.</p>
     <p class="mono">More on GitHub: <a href="https://github.com/Kadn0" target="_blank" rel="noopener">github.com/Kadn0</a></p>
     <div class="card-actions"><button class="btn primary" type="button" data-close>Close</button></div>
   </template>
@@ -480,6 +509,7 @@
   <svg id="dog" class="dog" viewBox="0 0 60 40" hidden aria-hidden="true"><path d="M8 26C8 18 14 16 22 16H40L46 8L50 10L52 6L54 14C56 16 56 20 52 22H46L44 26M10 26L8 36M18 26L16 36M38 24L40 36M44 26L46 36M8 22L2 14" /><circle cx="51" cy="13" r="1" /></svg>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
   <script type="module" src="main.js"></script>
   <script type="module" src="site.js"></script>
   <script type="module" src="city.js"></script>
