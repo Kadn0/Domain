@@ -200,7 +200,7 @@ function renderList() {
     }
     note.textContent = flightData.length ? `${flightData.length.toLocaleString()} aircraft over the US right now. Updates every minute.` : 'Loading flights...';
     const sample = flightData.filter((f) => f[4]).slice(0, 60);
-    list.innerHTML = sample.map((f, i) => `<li><button type="button" data-i="${i}"><b>${f[4]}</b><small>${Math.round(f[3]).toLocaleString()} ft</small></button></li>`).join('');
+    list.innerHTML = sample.map((f, i) => `<li><button type="button" data-i="${i}"><b>${String(f[4]).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)}</b><small>${Math.round(f[3]).toLocaleString()} ft</small></button></li>`).join('');
     list.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { const f = sample[Number(b.dataset.i)]; view.focus(f[0], f[1]); }));
     return;
   }

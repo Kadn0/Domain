@@ -397,3 +397,6 @@ html.world-open #readout, html.world-open #labels { display: none; }
   .world { left: 0; grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
   .world-panel { order: 2; padding: 18px 16px; border-left: 0; border-top: 1px solid var(--rule); }
 }
+
+/* Honeypot form layout (kept out of inline style for the CSP) */
+#honey { display: grid; gap: 12px; }
