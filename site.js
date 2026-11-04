@@ -462,7 +462,7 @@ $('nas-status')?.addEventListener('click', () => {
 // ---------- Honeypot ----------
 $('adminLink')?.addEventListener('click', () => {
   openModal(`<h3>Admin panel</h3>
-    <form id="honey" style="display:grid;gap:12px">
+    <form id="honey">
       <label>Username<input name="u" autocomplete="off" spellcheck="false"></label>
       <label>Passphrase<input name="p" type="password" autocomplete="off"></label>
       <p class="mono" id="honeyMsg" hidden></p>
