@@ -38,8 +38,8 @@ function build() {
   renderer.setClearColor(BG, 1);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(BG, 230, 600);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 1100);
+  scene.fog = new THREE.Fog(BG, 320, 950);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 1600);
 
   scene.add(new THREE.HemisphereLight(0xdadbd6, 0x121314, 0.62));
   const sun = new THREE.DirectionalLight(0xffffff, 0.85);
@@ -211,7 +211,7 @@ function build() {
   };
   ringRoad(8, 10.5, 0.06);
   DISTRICTS.forEach((deg) => {
-    const reach = deg === 0 ? 124 : DR + 10; // the 0-degree avenue runs out through the wall to Cloudflare
+    const reach = deg === 0 ? 141 : DR + 10; // the 0-degree avenue runs out through the wall to Cloudflare
     const [x, z] = polar(deg, (10.5 + reach) / 2);
     const road = box(reach - 10.5, 0.12, 2.6, x, 0, z, M.road, city, { line: LINE_SOFT, cast: false });
     road.rotation.y = -rad(deg);
@@ -332,7 +332,8 @@ function build() {
   anchor('gw', 'GATEWAY', 0, 8.4, 0);
 
   // ---------- 02 Front door: a security checkpoint, with the internet as a globe in the sky ----------
-  const gate = district(0, 122);
+  const gate = district(0, 150);
+  gate.position.y = 1;
   // the scanner arch the road passes through
   box(1.1, 7.2, 1.1, 0, 0, -2.6, M.mid, gate);
   box(1.1, 7.2, 1.1, 0, 0, 2.6, M.mid, gate);
@@ -384,92 +385,91 @@ function build() {
     arm.rotation.x = -Math.min(1, Math.max(0, Math.sin(phase * Math.PI) * 1.6)) * 1.35;
     warn.forEach((w, i) => { w.visible = Math.sin(t * 6 + i * Math.PI) > 0; });
   });
-  // the internet: a globe with grayscale continents, a lat/long grid and a faint atmosphere
-  const inet = new THREE.Group();
-  const [ix, iz] = polar(0, 172);
-  const IY = 44;
-  const IS = 1.9; // the internet is bigger than the city
-  inet.position.set(ix, IY, iz);
-  inet.scale.setScalar(IS);
-  city.add(inet);
-  const earthTex = texture((g, w, h) => {
-    g.fillStyle = '#1b1c1e';
+  // ---------- Outside the wall: Cloudflare's edge, GitHub, visitors' devices and the Earth ----------
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const tileTex = texture((g, w, h) => {
+    g.fillStyle = '#2b2d30';
     g.fillRect(0, 0, w, h);
-    g.fillStyle = '#d2d3d5';
-    // rough continent outlines as [lon, lat] points, drawn equirectangular
-    [
-      [[-165, 65], [-140, 70], [-95, 72], [-80, 62], [-60, 55], [-65, 45], [-80, 30], [-97, 20], [-90, 15], [-80, 8], [-105, 22], [-118, 33], [-125, 48], [-150, 60]],
-      [[-80, 8], [-60, 10], [-35, -7], [-40, -22], [-55, -35], [-68, -55], [-75, -45], [-72, -18], [-81, -5]],
-      [[-17, 15], [-10, 30], [10, 37], [32, 31], [43, 12], [51, 11], [40, -15], [32, -28], [20, -35], [12, -18], [9, 4], [-8, 5]],
-      [[-10, 36], [-9, 43], [-5, 48], [5, 52], [10, 58], [25, 70], [60, 70], [100, 77], [140, 72], [180, 68], [160, 60], [140, 50], [122, 40], [120, 25], [108, 20], [100, 8], [95, 15], [80, 8], [72, 20], [57, 25], [50, 30], [35, 36], [28, 40], [20, 40], [12, 44], [0, 40]],
-      [[113, -22], [122, -17], [131, -12], [142, -11], [153, -26], [150, -37], [140, -38], [132, -32], [115, -34]],
-      [[-55, 60], [-45, 60], [-20, 70], [-25, 82], [-60, 82], [-70, 77]],
-      [[-6, 50], [2, 51], [-3, 58], [-6, 56]],
-      [[130, 31], [141, 36], [142, 44], [136, 36]],
-      [[44, -13], [50, -15], [48, -25], [43, -22]],
-      [[95, 5], [105, -6], [115, -8], [118, -2], [110, 2], [100, 6]],
-      [[120, -2], [140, -3], [150, -6], [140, -9], [125, -8]],
-      [[166, -46], [174, -36], [178, -38], [170, -46]],
-      [[-85, 22], [-75, 20], [-74, 19], [-84, 21]],
-    ].forEach((shape) => {
-      g.beginPath();
-      shape.forEach(([lon, lat]) => g.lineTo(((lon + 180) / 360) * w, ((90 - lat) / 180) * h));
-      g.closePath();
-      g.fill();
-    });
-    g.fillRect(0, h * 0.92, w, h * 0.08); // antarctica
-    g.strokeStyle = 'rgba(228,227,222,0.28)';
-    g.lineWidth = 1;
-    for (let x = 0; x <= w; x += w / 12) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    for (let y = h / 6; y < h; y += h / 6) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-  }, 512, 256);
-  // the land glows a little so the continents read even on the night side
-  const globe = new THREE.Mesh(new THREE.SphereGeometry(6, 48, 32), std(0xffffff, { map: earthTex, emissive: 0xffffff, emissiveMap: earthTex, emissiveIntensity: 0.65, roughness: 0.7 }));
-  inet.add(globe);
-  inet.rotation.z = 0.41; // the earth's axial tilt
-  lines([0, -8, 0, 0, 8, 0], LINE, inet); // the axis
-  const meridian = [];
-  for (let k = 0; k <= 32; k += 1) {
-    const a = (k / 32) * Math.PI - Math.PI / 2;
-    const b = ((k + 1) / 32) * Math.PI - Math.PI / 2;
-    if (k < 32) meridian.push(Math.cos(a) * 7.2, Math.sin(a) * 7.2, 0, Math.cos(b) * 7.2, Math.sin(b) * 7.2, 0);
+    g.strokeStyle = '#4a4d52';
+    g.lineWidth = 3;
+    for (let x = 0; x < 4; x += 1) for (let y = 0; y < 4; y += 1) g.strokeRect(10 + x * 60, 10 + y * 60, 50, 50);
+  }, 256, 256);
+  function platform(x, z, w, d, parent = city) {
+    box(w, 1.2, d, x, -0.2, z, M.dark, parent, { line: LINE });
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.8, d - 0.8), std(0xffffff, { map: tileTex }));
+    top.rotation.x = -Math.PI / 2;
+    top.position.set(x, 1.01, z);
+    top.receiveShadow = true;
+    parent.add(top);
   }
-  lines(meridian, LINE, inet);
-  const ring = mesh(new THREE.TorusGeometry(7.2, 0.18, 8, 48, Math.PI), M.light, 0, 0, 0, inet, { edges: false, cast: false });
-  ring.rotation.z = -Math.PI / 2; // the half-ring holding it, like a desk globe
-  mesh(new THREE.CylinderGeometry(0.12, 0.12, 15.2, 8), M.light, 0, 0, 0, inet, { edges: false, cast: false }); // axis rod
-  const air = new THREE.Mesh(new THREE.SphereGeometry(6.5, 48, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.14, side: THREE.BackSide, depthWrite: false }));
-  inet.add(air);
-  circle(9, 0, LINE_SOFT, inet, 96).rotation.x = 0.4;
-  animators.push((t) => { globe.rotation.y = t * 0.12; });
-  const fan = [];
-  for (let i = 0; i < 18; i += 1) {
-    const p = world(gate, (rand() - 0.5) * 1.4, 7.8, (rand() - 0.5) * 5);
-    fan.push(ix, IY, iz, p.x, p.y, p.z);
-  }
-  lines(fan, LINE_SOFT);
-  // packets sliding down the beam from the internet to the gate
-  const beamPackets = Array.from({ length: 16 }, () => ({ line: Math.floor(rand() * 18), t: rand(), speed: 0.25 + rand() * 0.3 }));
-  const beamMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), M.glow, beamPackets.length);
-  city.add(beamMesh);
-  animators.push((t, dt) => {
-    beamPackets.forEach((p, n) => {
-      p.t += p.speed * dt;
-      if (p.t > 1) {
-        p.t = 0;
-        p.line = Math.floor(Math.random() * 18);
-      }
-      const f = fan.slice(p.line * 6, p.line * 6 + 6);
-      tmp.position.set(f[0] + (f[3] - f[0]) * p.t, f[1] + (f[4] - f[1]) * p.t, f[2] + (f[5] - f[2]) * p.t);
-      tmp.rotation.set(0, 0, 0);
-      tmp.updateMatrix();
-      beamMesh.setMatrixAt(n, tmp.matrix);
-    });
-    beamMesh.instanceMatrix.needsUpdate = true;
+  // the edge strip: TUNNEL, ACCESS and DNS platforms joined by a road, like regions on a map
+  const EDGE_X = 150;
+  [-23, 0, 23].forEach((z) => platform(EDGE_X, z, 19, 19));
+  box(2.4, 0.3, 50, EDGE_X, 0.7, 0, M.road, city, { line: LINE_SOFT, cast: false });
+  // TUNNEL: a portal facing the city, the tunnel's mouth lit
+  const portal = new THREE.Group();
+  portal.position.set(EDGE_X, 1, -23);
+  city.add(portal);
+  const archGeo = new THREE.CylinderGeometry(4.2, 4.2, 9, 32, 1, true, -Math.PI / 2, Math.PI);
+  const arch = mesh(archGeo, std(0x3a3c40, { side: THREE.DoubleSide }), 0, 0, 0, portal, { line: LINE_SOFT });
+  arch.rotation.z = Math.PI / 2;
+  const mouth = mesh(new THREE.TorusGeometry(4.2, 0.2, 8, 40, Math.PI), M.glow, -4.5, 0, 0, portal, { edges: false, cast: false });
+  mouth.rotation.y = Math.PI / 2;
+  // DNS: three resolver racks with their lights
+  const racks = [];
+  [-4, 0, 4].forEach((z) => {
+    box(2.2, 5.5, 2.6, EDGE_X, 1, 23 + z, M.dark, city, { line: LINE_SOFT });
+    for (let y = 2; y < 6.2; y += 0.7) racks.push(box(0.06, 0.12, 1.6, EDGE_X - 1.12, y, 23 + z, M.glow, city, { edges: false, cast: false }));
   });
-  anchor('inet', 'INTERNET', ix, IY + 15, iz);
-  const cfTop = world(gate, 0, 9, 0);
-  anchor('cf', 'CLOUDFLARE', cfTop.x, cfTop.y, cfTop.z);
+  animators.push((t) => racks.forEach((l, i) => { l.visible = Math.sin(t * (3 + (i % 4)) + i) > -0.3; }));
+  const cfTop = V(EDGE_X, 12, 0);
+  anchor('cf', 'CLOUDFLARE ACCESS', cfTop.x, cfTop.y, cfTop.z);
+  anchor('tun', 'TUNNEL', EDGE_X, 9, -23);
+  anchor('cfdns', 'DNS', EDGE_X, 9, 23);
+  // GitHub Pages, where this site is served from
+  const GH = V(EDGE_X + 26, 0, -62);
+  platform(GH.x, GH.z, 14, 14);
+  [-3, 3].forEach((z) => {
+    box(5, 4.5, 4.4, GH.x, 1, GH.z + z, M.dark, city, { line: LINE_SOFT });
+    for (let y = 2; y < 5; y += 0.9) box(0.06, 0.4, 3.6, GH.x - 2.53, y, GH.z + z, M.glow, city, { edges: false, cast: false });
+  });
+  anchor('gh', 'GITHUB PAGES', GH.x, 9, GH.z);
+  // visitors: a phone and a laptop, out on the internet
+  const devices = new THREE.Group();
+  city.add(devices);
+  const phone = new THREE.Group();
+  phone.position.set(EDGE_X + 48, 22, 30);
+  phone.rotation.set(-0.5, 0.4, 0.2);
+  devices.add(phone);
+  box(2.4, 0.3, 4.6, 0, 0, 0, M.dark, phone, { line: LINE });
+  box(2.1, 0.02, 4.1, 0, 0.3, 0, M.glow, phone, { edges: false, cast: false });
+  const laptop = new THREE.Group();
+  laptop.position.set(EDGE_X + 58, 26, 58);
+  laptop.rotation.y = -0.6;
+  devices.add(laptop);
+  box(5, 0.3, 3.6, 0, 0, 0, M.dark, laptop, { line: LINE });
+  const lid = new THREE.Group();
+  lid.position.set(-1.8, 0.3, 0);
+  lid.rotation.z = -1.25;
+  laptop.add(lid);
+  box(0.25, 3.4, 3.6, 0, 0, 0, M.dark, lid, { line: LINE });
+  box(0.02, 3, 3.2, 0.14, 0.2, 0, M.glow, lid, { edges: false, cast: false });
+  animators.push((t) => {
+    phone.position.y = 22 + Math.sin(t * 0.8) * 0.6;
+    laptop.position.y = 26 + Math.sin(t * 0.7 + 1) * 0.6;
+  });
+  anchor('phone', 'PHONE', phone.position.x, 26, phone.position.z);
+  anchor('laptop', 'LAPTOP', laptop.position.x, 31, laptop.position.z);
+  // the Earth: just the planet, far out past everything, black land on a gray sea
+  const EARTH = V(232, 34, -24);
+  const EARTH_R = 22;
+  const earthMap = new THREE.TextureLoader().load('earth.png');
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(EARTH_R, 64, 48), std(0xffffff, { map: earthMap, emissive: 0xffffff, emissiveMap: earthMap, emissiveIntensity: 0.45, roughness: 0.9 }));
+  earth.position.copy(EARTH);
+  earth.rotation.set(0.41, 4.2, 0); // tilted, with the Americas toward the city
+  city.add(earth);
+  animators.push((t) => { earth.rotation.y = 4.2 + t * 0.02; });
+  anchor('inet', 'INTERNET', EARTH.x, EARTH.y + EARTH_R + 4, EARTH.z);
 
   // ---------- 03 Network: the DNS Pi, a single-board computer under a glowing shield, beside a mast ----------
   const dns = district(45, DR - 1);
@@ -1137,34 +1137,45 @@ function build() {
   const hhTop = world(arcade, 0, 9.4, 0);
   anchor('handheld', 'RETRO HANDHELD', hhTop.x, hhTop.y, hhTop.z);
 
-  // ---------- 08 Services: the Launcher plaza ----------
+  // ---------- 08 Services: the Launcher, a big home screen of app tiles ----------
   const plaza = district(270, DR);
-  mesh(new THREE.CylinderGeometry(8.4, 8.4, 0.8, 64), M.mid, 0, 0.4, 0, plaza);
-  for (let i = 0; i < 20; i += 1) {
-    const a = (i / 20) * Math.PI * 2;
-    box(0.4, 3.6, 0.4, Math.cos(a) * 7.4, 0.8, Math.sin(a) * 7.4, M.dark, plaza);
-  }
-  circle(7.4, 4.4, LINE, plaza, 80);
-  box(2.2, 10, 2.2, 0, 0.8, 0, M.dark, plaza);
-  box(2.25, 0.5, 2.25, 0, 7.5, 0, M.glow, plaza, { edges: false, cast: false });
-  const halo = new THREE.Mesh(new THREE.TorusGeometry(4, 0.1, 8, 80), M.glow);
-  halo.position.y = 13;
-  halo.rotation.x = Math.PI / 2;
-  plaza.add(halo);
-  const kiosks = [];
-  for (let i = 0; i < 4; i += 1) {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const x = Math.cos(a) * 4.6;
-    const z = Math.sin(a) * 4.6;
-    box(1.4, 1.6, 1.4, x, 0.8, z, M.light, plaza);
-    kiosks.push(0, 10.8, 0, x, 2.4, z);
-  }
-  lines(kiosks, LINE_SOFT, plaza);
-  animators.push((t) => {
-    halo.position.y = 13 + Math.sin(t * 1.2) * 0.6;
-    halo.rotation.z = t * 0.5;
-  });
-  const lTop = world(plaza, 0, 15, 0);
+  mesh(new THREE.CylinderGeometry(8.4, 8.8, 0.8, 64), M.mid, 0, 0.4, 0, plaza, { line: LINE_SOFT });
+  circle(8.4, 0.82, LINE, plaza, 96);
+  const APPS = ['JELLYFIN', 'SEERR', 'SYNOLOGY', 'MINECRAFT', 'GITHUB', 'STATUS'];
+  const homeTex = texture((g, w, h) => {
+    g.fillStyle = '#16171a';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#e4e3de';
+    g.font = 'bold 34px monospace';
+    g.textBaseline = 'middle';
+    g.fillText('APP LAUNCHER', 36, 50);
+    g.fillStyle = '#5a5c60';
+    g.fillRect(36, 86, w - 72, 3);
+    APPS.forEach((name, i) => {
+      const x = 36 + (i % 3) * ((w - 72) / 3);
+      const y = 120 + Math.floor(i / 3) * 190;
+      const tw = (w - 72) / 3 - 24;
+      g.fillStyle = '#e4e3de';
+      g.fillRect(x, y, tw, 120);
+      g.fillStyle = '#16171a';
+      g.fillRect(x + tw / 2 - 26, y + 22, 52, 52); // the app's icon block
+      g.font = 'bold 22px monospace';
+      g.textAlign = 'center';
+      g.fillText(name, x + tw / 2, y + 100);
+      g.textAlign = 'left';
+    });
+  }, 768, 512);
+  box(0.7, 8.6, 13, 0, 2.6, 0, M.dark, plaza, { line: LINE }); // the screen's frame
+  const home = new THREE.Mesh(new THREE.PlaneGeometry(12.2, 8.1), new THREE.MeshBasicMaterial({ map: homeTex }));
+  home.position.set(-0.37, 6.9, 0);
+  home.rotation.y = -Math.PI / 2;
+  plaza.add(home);
+  [-4.6, 4.6].forEach((z) => box(0.6, 1.8, 0.6, 0, 0.8, z, M.mid, plaza)); // feet
+  const appTiles = APPS.map((_, i) => box(1.5, 1.5, 1.5, -3.2 - Math.floor(i / 3) * 2.6, 0.8, (i % 3 - 1) * 3.4, M.light, plaza, { line: LINE_SOFT }));
+  animators.push((t) => appTiles.forEach((tile, i) => {
+    tile.position.y = 0.8 + 0.75 + Math.max(0, Math.sin(t * 1.6 - i * 0.9)) * 1.4; // each app lifts in turn, like it's launching
+  }));
+  const lTop = world(plaza, 0, 12.8, 0);
   anchor('launch', 'LAUNCHER', lTop.x, lTop.y, lTop.z);
 
   // ---------- Helpers Pi: a stacked cluster case ----------
@@ -1258,15 +1269,15 @@ function build() {
   // target, then azimuth (degrees around the target), elevation (degrees) and distance
   const at = (deg, r, y) => { const [x, z] = polar(deg, r); return [x, y, z]; };
   const SHOTS = {
-    'ch-01': { target: at(0, 50, 0), az: 205, el: 40, dist: 340, labels: ['inet', 'cf', 'fw', 'gw', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns', 'svc', 'stage'] },
-    'ch-02': { target: at(0, 125, 20), az: 105, el: 14, dist: 195, labels: ['inet', 'cf', 'fw'] },
+    'ch-01': { target: at(0, 80, 0), az: 205, el: 38, dist: 420, labels: ['inet', 'cf', 'fw', 'gw', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns', 'svc', 'stage'] },
+    'ch-02': { target: [178, 14, -6], az: 104, el: 20, dist: 275, labels: ['inet', 'cf', 'tun', 'cfdns', 'gh', 'phone', 'laptop', 'fw'] },
     'ch-03': { target: at(30, 20, 4), az: 82, el: 32, dist: 64, labels: ['gw', 'dns'] },
     'ch-04': { target: at(90, DR - 2, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
     'ch-05': { target: at(135, DR, 3), az: 170, el: 28, dist: 23, labels: ['mc'] },
     'ch-06': { target: at(180, DR, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi'] },
     'ch-07': { target: at(225, DR, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
     'ch-08': { target: at(315, WALL_R - 8, 6), az: 150, el: 30, dist: 60, labels: ['svc'] },
-    'ch-09': { target: at(270, DR, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
+    'ch-09': { target: at(270, DR - 2, 6), az: 62, el: 20, dist: 38, labels: ['launch'] },
     'ch-10': { target: at(162, 76, 5), az: 330, el: 24, dist: 48, labels: ['handheld', 'stage'] },
   };
   // keep filler buildings out of every close-up's line of sight
@@ -1796,46 +1807,28 @@ function build() {
     navRed.visible = navGreen.visible = (t % 1) < 0.7;
   });
 
-  // ---------- Data paths: visitor -> Cloudflare -> gateway -> each service, plus the DNS Pi's own lookups ----------
-  const pathMat = new THREE.MeshBasicMaterial({ color: 0xeeede8, transparent: true, opacity: 0.45 });
-  const riders = [];
-  function link(a, b, lift, r = 0.1, n = 2) {
+  // ---------- Links the roads can't reach: thin dashed lines, the way a map draws a route it can't pave ----------
+  const DASH = new THREE.LineDashedMaterial({ color: 0xd9d9d4, dashSize: 1.4, gapSize: 1, transparent: true, opacity: 0.55 });
+  const DASH_NEAR = new THREE.LineDashedMaterial({ color: 0xd9d9d4, dashSize: 0.35, gapSize: 0.3, transparent: true, opacity: 0.7 });
+  function dashed(a, b, lift = 0, mat = DASH) {
     const mid = a.clone().lerp(b, 0.5);
     mid.y = Math.max(a.y, b.y) + lift;
-    const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
-    city.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, r, 6, false), pathMat));
-    const speed = 7 / curve.getLength();
-    for (let i = 0; i < n; i += 1) riders.push({ curve, t: i / n, speed: i % 2 ? -speed : speed });
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new THREE.QuadraticBezierCurve3(a, mid, b).getPoints(80)), mat);
+    line.computeLineDistances();
+    city.add(line);
   }
-  const V = (x, y, z) => new THREE.Vector3(x, y, z);
-  const gwPort = V(0, 2.8, 0);
-  const cfPort = world(gate, -0.9, 7.6, 0);
-  const inetC = V(ix, IY, iz);
-  const wallGate = world(gateHouse, 0, 13.6, 0);
-  link(inetC.clone().add(cfPort.clone().sub(inetC).setLength(6.2 * IS)), cfPort, 4, 0.2, 6); // visitors reach Cloudflare first
-  link(cfPort, wallGate, 3, 0.2, 4); // the tunnel comes in through the hardened gate
-  link(wallGate, gwPort, 8, 0.2, 8); // and on to the gateway
-  [world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, -2), world(mc, -5, 2, 0), ledPi, world(lab, -1.5, 3.5, 0),
-    world(lab, 2.5, 1.5, -11), world(helpers, -1.5, 4, 0), dnsTop].forEach((p) => link(gwPort, p, 5));
-  link(cfPort, world(plaza, -1.5, 5, 0), 12, 0.1, 3); // the Launcher lives at Cloudflare, not at home
-  link(dnsTop, inetC.clone().add(dnsTop.clone().sub(inetC).setLength(6.2 * IS)), 6, 0.1, 3); // the DNS Pi resolves straight from the root servers
+  const accessPort = V(EDGE_X + 9.5, 3, 0);
+  const earthEdge = (from) => EARTH.clone().add(from.clone().sub(EARTH).setLength(EARTH_R + 0.4));
+  dashed(earthEdge(accessPort), accessPort, 8); // the public internet reaches Cloudflare first
+  dashed(phone.position.clone(), accessPort, 4); // visitors sign in at Access
+  dashed(laptop.position.clone(), accessPort, 4);
+  dashed(V(EDGE_X, 3, -10), V(GH.x - 7, 3, GH.z + 4), 3); // this site: Cloudflare in front of GitHub Pages
+  dashed(dnsTop, earthEdge(dnsTop), 40); // the DNS Pi looks names up from the root servers itself
   // inside the media district: Seerr <-> Jellyfin, Seerr -> the *arr containers -> the NAS -> Jellyfin
-  link(world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, 4), 2);
-  link(world(media, -3, 1.9, 8.4), world(media, 2, 10.6, 5.5), 2);
-  link(world(media, 3, 11.1, 4.3), world(media, 3, 10.4, -2), 2);
-  link(world(media, 1, 10.4, -3), world(media, -4, 10.4, -3), 2);
-  const riderMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), M.glow, riders.length);
-  city.add(riderMesh);
-  animators.push((t, dt) => {
-    riders.forEach((p, n) => {
-      p.t = (((p.t + p.speed * dt) % 1) + 1) % 1;
-      p.curve.getPoint(p.t, tmp.position);
-      tmp.rotation.set(0, 0, 0);
-      tmp.updateMatrix();
-      riderMesh.setMatrixAt(n, tmp.matrix);
-    });
-    riderMesh.instanceMatrix.needsUpdate = true;
-  });
+  dashed(world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, 4), 2, DASH_NEAR);
+  dashed(world(media, -3, 1.9, 8.4), world(media, 2, 10.6, 5.5), 2, DASH_NEAR);
+  dashed(world(media, 3, 11.1, 4.3), world(media, 3, 10.4, -2), 2, DASH_NEAR);
+  dashed(world(media, 1, 10.4, -3), world(media, -4, 10.4, -3), 2, DASH_NEAR);
 
   // ---------- Traffic: packets on the rings and the radial roads ----------
   const cars = [];
@@ -1846,9 +1839,10 @@ function build() {
     for (let i = 0; i < 26; i += 1) cars.push({ kind: 'ring', r: i % 2 ? r1 : r2, y: 0.4, dir: i % 2 ? 1 : -1, t: rand() * Math.PI * 2, speed: 0.025 + rand() * 0.02 });
   });
   DISTRICTS.forEach((deg) => {
-    for (let i = 0; i < 6; i += 1) cars.push({ kind: 'radial', deg, lane: i % 2 ? 0.6 : -0.6, dir: i % 2 ? 1 : -1, t: rand(), speed: 0.09 + rand() * 0.05 });
+    const n = deg === 0 ? 24 : 6;
+    for (let i = 0; i < n; i += 1) cars.push({ kind: 'radial', deg, lane: i % 2 ? 0.6 : -0.6, dir: i % 2 ? 1 : -1, t: rand(), speed: (0.09 + rand() * 0.05) * (deg === 0 ? 0.35 : 1) });
   });
-  const carMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.5, 0.5), M.light, cars.length);
+  const carMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 0.5, 0.5), M.glow, cars.length);
   carMesh.castShadow = true;
   city.add(carMesh);
   function moveCars(dt) {
@@ -1859,7 +1853,7 @@ function build() {
         tmp.rotation.set(0, -c.t - Math.PI / 2, 0);
       } else {
         c.t = (c.t + c.speed * dt * c.dir + 1) % 1;
-        const s = 11 + c.t * (DR - 2);
+        const s = 11 + c.t * (c.deg === 0 ? 130 : DR - 2);
         const a = rad(c.deg);
         tmp.position.set(Math.cos(a) * s - Math.sin(a) * c.lane, 0.4, Math.sin(a) * s + Math.cos(a) * c.lane);
         tmp.rotation.set(0, -a, 0);
@@ -1872,7 +1866,7 @@ function build() {
   moveCars(0);
 
   // ---------- Camera ----------
-  const cam = { target: new THREE.Vector3(...SHOTS['ch-01'].target), az: 205, el: 40, dist: 340 };
+  const cam = { target: new THREE.Vector3(...SHOTS['ch-01'].target), az: 205, el: 38, dist: 420 };
   let from = { ...cam, target: cam.target.clone() };
   let to = SHOTS['ch-01'];
   let flyStart = -10;

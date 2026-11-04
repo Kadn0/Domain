@@ -372,3 +372,28 @@ html.tv-sound-on .tv-sound { display: block; }
 /* the chapters are full-width sections over the city; let clicks through to the sound button except on the panels */
 .stage { pointer-events: none; }
 .stage :is(.panel, .track) { pointer-events: auto; }
+
+/* ---------- Extras: World ---------- */
+.world { position: fixed; top: 0; bottom: 0; left: var(--rail); right: 0; z-index: 30; background: var(--bg); display: grid; grid-template-columns: minmax(280px, 360px) 1fr; }
+.world[hidden] { display: none; }
+.world-panel { overflow-y: auto; padding: 56px 28px 28px 36px; border-left: 1px solid var(--rule); }
+.world-kicker { margin: 0 0 10px; font: 400 10px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.world-kicker span { color: var(--muted); }
+.world h2 { margin: 0 0 14px; font: 300 34px/1.05 var(--sans); letter-spacing: -0.02em; }
+.world-tabs { display: flex; gap: 14px; margin: 0 0 12px; }
+.world-tabs button { background: none; border: 0; padding: 0 0 4px; color: var(--muted); font: 400 10px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border-bottom: 1px solid transparent; }
+.world-tabs button[aria-pressed="true"], .world-tabs button:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.world-note { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.world-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.world-list button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 10px 0; color: var(--ink); cursor: pointer; font: inherit; }
+.world-list button:hover b { text-decoration: underline; }
+.world-list b { display: block; font-weight: 400; font-size: 15px; }
+.world-list small { font: 400 10px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#worldCanvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#worldCanvas:active { cursor: grabbing; }
+.world-exit { position: absolute; top: 18px; right: 22px; background: var(--bg); color: var(--ink); border: 1px solid var(--ink); padding: 8px 12px; font: 500 10px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+html.world-open #readout, html.world-open #labels { display: none; }
+@media (max-width: 899px) {
+  .world { left: 0; grid-template-columns: 1fr; grid-template-rows: 55vh 1fr; }
+  .world-panel { order: 2; padding: 18px 16px; border-left: 0; border-top: 1px solid var(--rule); }
+}

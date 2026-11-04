@@ -67,6 +67,7 @@
         <li><button type="button" data-go="ch-09">Quick launch</button></li>
         <li><button type="button" data-projects>Projects</button></li>
         <li><button type="button" id="eggBtn">Eggs 0/13</button></li>
+        <li><button type="button" data-world>World</button></li>
         <li><a href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Launcher</a></li>
       </ol>
     </div>
@@ -246,7 +247,7 @@
           <h2>Movie night <span class="m">that never buffers</span></h2>
           <p>The NAS is a big box of hard drives. Jellyfin turns what's on it into your own streaming service.</p>
           <p>Seerr is the suggestion box, where you ask for something new.</p>
-          <p>Ask Seerr for a show and a team of little helper apps finds it, saves it to the NAS, and it shows up in Jellyfin. The glowing lines show that trip.</p>
+          <p>Ask Seerr for a show and a team of little helper apps finds it, saves it to the NAS, and it shows up in Jellyfin. The dashed lines show that trip.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
           <header><span class="n">04</span><span class="t">Media</span></header>
@@ -517,6 +518,21 @@
   <div id="toasts" class="toasts" aria-live="polite"></div>
   <div id="modal" class="modal" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
   <div id="plugin" class="plugin" hidden><div class="piece">?</div><p>This plugin isn't supported.</p></div>
+  <section id="world" class="world" hidden aria-labelledby="worldTitle">
+    <div class="world-panel">
+      <p class="world-kicker">Extras:<span>World</span></p>
+      <h2 id="worldTitle">World</h2>
+      <div class="world-tabs" role="group" aria-label="What to show">
+        <button type="button" data-world-tab="airports" aria-pressed="true">Airports</button>
+        <button type="button" data-world-tab="tracks" aria-pressed="false">Race tracks</button>
+        <button type="button" data-world-tab="flights" aria-pressed="false">Live flights</button>
+      </div>
+      <p class="world-note" id="worldNote"></p>
+      <ul class="world-list" id="worldList"></ul>
+    </div>
+    <canvas id="worldCanvas" aria-label="A globe you can drag to turn"></canvas>
+    <button type="button" class="world-exit" id="worldExit">Exit</button>
+  </section>
   <div id="saver" class="saver" hidden><span id="saverText">KADENTS</span></div>
   <svg id="dog" class="dog" viewBox="0 0 60 40" hidden aria-hidden="true"><path d="M8 26C8 18 14 16 22 16H40L46 8L50 10L52 6L54 14C56 16 56 20 52 22H46L44 26M10 26L8 36M18 26L16 36M38 24L40 36M44 26L46 36M8 22L2 14" /><circle cx="51" cy="13" r="1" /></svg>
 
@@ -525,5 +541,6 @@
   <script type="module" src="main.js"></script>
   <script type="module" src="site.js"></script>
   <script type="module" src="city.js"></script>
+  <script type="module" src="world.js"></script>
 </body>
 </html>
