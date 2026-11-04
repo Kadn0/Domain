@@ -1137,45 +1137,67 @@ function build() {
   const hhTop = world(arcade, 0, 9.4, 0);
   anchor('handheld', 'RETRO HANDHELD', hhTop.x, hhTop.y, hhTop.z);
 
-  // ---------- 08 Services: the Launcher, a big home screen of app tiles ----------
+  // ---------- 08 Services: the Launcher, a rocket on its pad beside a service tower ----------
   const plaza = district(270, DR);
   mesh(new THREE.CylinderGeometry(8.4, 8.8, 0.8, 64), M.mid, 0, 0.4, 0, plaza, { line: LINE_SOFT });
   circle(8.4, 0.82, LINE, plaza, 96);
-  const APPS = ['JELLYFIN', 'SEERR', 'SYNOLOGY', 'MINECRAFT', 'GITHUB', 'STATUS'];
-  const homeTex = texture((g, w, h) => {
-    g.fillStyle = '#16171a';
+  box(5.6, 0.6, 5.6, 0.6, 0.8, 0, M.dark, plaza, { line: LINE }); // the launch mount
+  box(1.8, 0.62, 5.8, 0.6, 0.8, 0, std(0x111214), plaza, { edges: false, cast: false }); // the flame trench through it
+  const rocket = new THREE.Group();
+  rocket.position.set(0.6, 1.4, 0);
+  plaza.add(rocket);
+  const hull = std(0xe2e1dc, { roughness: 0.55 });
+  const bodyTex = texture((g, w, h) => {
+    g.fillStyle = '#e2e1dc';
     g.fillRect(0, 0, w, h);
-    g.fillStyle = '#e4e3de';
-    g.font = 'bold 34px monospace';
-    g.textBaseline = 'middle';
-    g.fillText('APP LAUNCHER', 36, 50);
-    g.fillStyle = '#5a5c60';
-    g.fillRect(36, 86, w - 72, 3);
-    APPS.forEach((name, i) => {
-      const x = 36 + (i % 3) * ((w - 72) / 3);
-      const y = 120 + Math.floor(i / 3) * 190;
-      const tw = (w - 72) / 3 - 24;
-      g.fillStyle = '#e4e3de';
-      g.fillRect(x, y, tw, 120);
-      g.fillStyle = '#16171a';
-      g.fillRect(x + tw / 2 - 26, y + 22, 52, 52); // the app's icon block
-      g.font = 'bold 22px monospace';
-      g.textAlign = 'center';
-      g.fillText(name, x + tw / 2, y + 100);
-      g.textAlign = 'left';
+    g.fillStyle = '#2a2c2f';
+    g.fillRect(0, h * 0.62, w, h * 0.05); // the stage joint
+    g.fillRect(0, h * 0.14, w, h * 0.03);
+    g.font = 'bold 30px monospace';
+    g.textAlign = 'center';
+    [0.25, 0.75].forEach((u) => 'LAUNCHER'.split('').forEach((c, i) => g.fillText(c, w * u, h * 0.2 + i * 29))); // lettered down both sides
+  }, 256, 512);
+  const bodyMat = std(0xffffff, { map: bodyTex, roughness: 0.55 });
+  mesh(new THREE.CylinderGeometry(0.85, 0.75, 0.9, 24), M.dark, 0, 1.0, 0, rocket, { line: LINE_SOFT }); // engine bell
+  mesh(new THREE.CylinderGeometry(1.25, 1.25, 11, 32), bodyMat, 0, 7, 0, rocket, { line: LINE_FAINT }); // the body
+  mesh(new THREE.CylinderGeometry(0.02, 1.25, 3.4, 32), hull, 0, 14.2, 0, rocket, { line: LINE_FAINT }); // nose cone
+  const port = mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.1, 20), M.glow, 0, 11.4, 1.24, rocket, { edges: false, cast: false });
+  port.rotation.x = Math.PI / 2; // a window
+  for (let i = 0; i < 4; i += 1) {
+    const fin = new THREE.Group();
+    fin.rotation.y = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    rocket.add(fin);
+    const shape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(1.7, -0.2), new THREE.Vector2(1.7, 1.2), new THREE.Vector2(0, 3.6)]);
+    const finMesh = mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.16, bevelEnabled: false }), M.dark, 1.15, 1.6, -0.08, fin, { line: LINE_SOFT });
+    finMesh.castShadow = true;
+  }
+  // the service tower: a solid steel frame with braces, two arms reaching the rocket, a light on top
+  const tower = new THREE.Group();
+  tower.position.set(0.6, 0.8, -4.6);
+  plaza.add(tower);
+  box(2.4, 17, 2.4, 0, 0, 0, M.mid, tower, { line: LINE });
+  const braces = [];
+  for (let y = 0; y < 16; y += 2.4) [-1.22, 1.22].forEach((x) => braces.push(x, y, -1.22, x, y + 2.4, 1.22, x, y + 2.4, -1.22, x, y, 1.22));
+  lines(braces, LINE, tower);
+  [6.5, 12.5].forEach((y) => box(0.5, 0.4, 2.6, 0, y, 2.4, M.dark, tower, { line: LINE_SOFT })); // swing arms
+  const towerLight = box(0.6, 0.6, 0.6, 0, 17, 0, M.glow, tower, { edges: false, cast: false });
+  // steam rolling off the pad
+  const puffs = Array.from({ length: 6 }, (_, i) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), new THREE.MeshStandardMaterial({ color: 0xd8d8d4, transparent: true, opacity: 0.3, roughness: 1, depthWrite: false }));
+    plaza.add(m);
+    return { m, phase: i / 6, side: i % 2 ? 1 : -1 };
+  });
+  animators.push((t) => {
+    towerLight.visible = (t % 1.6) < 0.8;
+    rocket.position.x = 0.6 + Math.sin(t * 40) * 0.015; // engines idling
+    puffs.forEach((pf) => {
+      const k = (t * 0.25 + pf.phase) % 1;
+      pf.m.position.set(0.6 + pf.side * 0.4, 1.4 + k * 1.2, pf.side * (2.6 + k * 4.5));
+      pf.m.scale.setScalar(0.6 + k * 1.8);
+      pf.m.material.opacity = 0.32 * (1 - k);
     });
-  }, 768, 512);
-  box(0.7, 8.6, 13, 0, 2.6, 0, M.dark, plaza, { line: LINE }); // the screen's frame
-  const home = new THREE.Mesh(new THREE.PlaneGeometry(12.2, 8.1), new THREE.MeshBasicMaterial({ map: homeTex }));
-  home.position.set(-0.37, 6.9, 0);
-  home.rotation.y = -Math.PI / 2;
-  plaza.add(home);
-  [-4.6, 4.6].forEach((z) => box(0.6, 1.8, 0.6, 0, 0.8, z, M.mid, plaza)); // feet
-  const appTiles = APPS.map((_, i) => box(1.5, 1.5, 1.5, -3.2 - Math.floor(i / 3) * 2.6, 0.8, (i % 3 - 1) * 3.4, M.light, plaza, { line: LINE_SOFT }));
-  animators.push((t) => appTiles.forEach((tile, i) => {
-    tile.position.y = 0.8 + 0.75 + Math.max(0, Math.sin(t * 1.6 - i * 0.9)) * 1.4; // each app lifts in turn, like it's launching
-  }));
-  const lTop = world(plaza, 0, 12.8, 0);
+  });
+  const lTop = world(plaza, 0.6, 19.5, 0);
   anchor('launch', 'LAUNCHER', lTop.x, lTop.y, lTop.z);
 
   // ---------- Helpers Pi: a stacked cluster case ----------
@@ -1277,7 +1299,7 @@ function build() {
     'ch-06': { target: at(180, DR, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi'] },
     'ch-07': { target: at(225, DR, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
     'ch-08': { target: at(315, WALL_R - 8, 6), az: 150, el: 30, dist: 60, labels: ['svc'] },
-    'ch-09': { target: at(270, DR - 2, 6), az: 62, el: 20, dist: 38, labels: ['launch'] },
+    'ch-09': { target: at(270, DR, 9), az: 62, el: 16, dist: 46, labels: ['launch'] },
     'ch-10': { target: at(162, 76, 5), az: 330, el: 24, dist: 48, labels: ['handheld', 'stage'] },
   };
   // keep filler buildings out of every close-up's line of sight

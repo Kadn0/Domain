@@ -1,8 +1,4 @@
 // Extras: World. The city's Earth, up close: drag to turn it, scroll or pinch to come in, pick a place from the list.
-// Airports and race tracks are fixed lists; live flights come from the flights relay (worker-flights.js) when it is deployed.
-
-// Set this to the deployed relay's URL (for example https://flights.<you>.workers.dev). While it is null, the Live tab says so.
-const FLIGHTS_URL = null;
 
 const PLACES = {
   airports: [
@@ -90,12 +86,6 @@ function build() {
   ring.visible = false;
   yaw.add(ring);
 
-  // flights: one point per aircraft, a touch above the ground
-  const flightGeo = new THREE.BufferGeometry();
-  const flights = new THREE.Points(flightGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 2.5, sizeAttenuation: false }));
-  flights.visible = false;
-  yaw.add(flights);
-
   const state = { yaw: 1.4, pitch: 0.55, dist: 4.2, targetYaw: 1.4, targetPitch: 0.55, targetDist: 4.2, drag: null, pinch: null };
 
   function resize() {
@@ -171,8 +161,6 @@ function build() {
   return {
     open: false,
     markers,
-    flights,
-    flightGeo,
     focus,
     start() { resize(); last = performance.now(); window.requestAnimationFrame(frame); },
   };
@@ -182,28 +170,13 @@ function build() {
 const list = $('worldList');
 const note = $('worldNote');
 let tab = 'airports';
-let flightTimer = 0;
-let flightData = [];
 
 function showMarkers() {
   Object.entries(view.markers).forEach(([kind, ms]) => ms.forEach((m) => { m.visible = kind === tab; }));
-  view.flights.visible = tab === 'flights';
 }
 
 function renderList() {
   document.querySelectorAll('[data-world-tab]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.worldTab === tab)));
-  if (tab === 'flights') {
-    if (!FLIGHTS_URL) {
-      note.textContent = 'Live flights are offline right now.';
-      list.innerHTML = '';
-      return;
-    }
-    note.textContent = flightData.length ? `${flightData.length.toLocaleString()} aircraft over the US right now. Updates every minute.` : 'Loading flights...';
-    const sample = flightData.filter((f) => f[4]).slice(0, 60);
-    list.innerHTML = sample.map((f, i) => `<li><button type="button" data-i="${i}"><b>${String(f[4]).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)}</b><small>${Math.round(f[3]).toLocaleString()} ft</small></button></li>`).join('');
-    list.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { const f = sample[Number(b.dataset.i)]; view.focus(f[0], f[1]); }));
-    return;
-  }
   const items = PLACES[tab];
   note.textContent = `${items.length} on the globe. Drag to turn it, scroll or pinch to come in, and pick one.`;
   list.innerHTML = items.map(([name, where], i) => `<li><button type="button" data-i="${i}"><b>${name}</b><small>${where}</small></button></li>`).join('');
@@ -213,30 +186,10 @@ function renderList() {
   }));
 }
 
-async function loadFlights() {
-  if (!FLIGHTS_URL || !view?.open) return;
-  try {
-    const r = await fetch(FLIGHTS_URL, { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status);
-    const data = await r.json();
-    flightData = Array.isArray(data.ac) ? data.ac.filter((f) => Number.isFinite(f[0]) && Number.isFinite(f[1])) : [];
-    const pos = new Float32Array(flightData.length * 3);
-    flightData.forEach((f, i) => toVec(f[0], f[1], 1.008).toArray(pos, i * 3));
-    view.flightGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    view.flightGeo.computeBoundingSphere();
-  } catch {
-    flightData = [];
-    if (tab === 'flights') note.textContent = 'Flights could not be loaded. Try again in a minute.';
-    return;
-  }
-  if (tab === 'flights') renderList();
-}
-
 function setTab(next) {
   tab = next;
   showMarkers();
   renderList();
-  if (tab === 'flights') loadFlights();
 }
 
 function open() {
@@ -247,8 +200,6 @@ function open() {
   view.open = true;
   view.start();
   setTab(tab);
-  window.clearInterval(flightTimer);
-  flightTimer = window.setInterval(loadFlights, 60000);
   $('worldExit').focus();
 }
 
@@ -256,7 +207,6 @@ function close() {
   panel.hidden = true;
   document.documentElement.classList.remove('world-open');
   if (view) view.open = false;
-  window.clearInterval(flightTimer);
 }
 
 openBtns.forEach((b) => b.addEventListener('click', open));
