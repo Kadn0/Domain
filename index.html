@@ -246,6 +246,7 @@
           <h2>Movie night <span class="m">that never buffers</span></h2>
           <p>The NAS is a big box of hard drives. Jellyfin turns what's on it into your own streaming service.</p>
           <p>Seerr is the suggestion box, where you ask for something new.</p>
+          <p>Ask Seerr for a show and a team of little helper apps finds it, saves it to the NAS, and it shows up in Jellyfin. The glowing lines show that trip.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
           <header><span class="n">04</span><span class="t">Media</span></header>
@@ -253,6 +254,8 @@
           <h2>Library storage, playback and requests</h2>
           <p>Media lives on the Synology NAS. Jellyfin serves libraries and playback; Seerr takes requests and shows their progress.</p>
           <ul class="tech-list">
+            <li><b>Request flow:</b> Seerr checks Jellyfin's library, then hands requests to Sonarr (TV), Radarr (movies) or Lidarr (music).</li>
+            <li><b>Containers:</b> Prowlarr manages indexers, SABnzbd downloads, Bazarr adds subtitles, Recyclarr syncs quality profiles, and Unmanic tidies files on the NAS.</li>
             <li><b>Status:</b> the NAS chip checks Jellyfin's health endpoint from your browser.</li>
           </ul>
         </div></div>

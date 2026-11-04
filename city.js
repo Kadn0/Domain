@@ -589,7 +589,23 @@ function build() {
   for (let y = 2; y < 9.6; y += 0.5) [-4.02, 4.02].forEach((z) => nasVents.push(-2.4, y, z, 2.4, y, z));
   lines(nasVents, LINE_SOFT, nas);
   box(5, 7, 5, 3, 0, 5.5, stripeMat, media);
-  lattice(3, 5.5, 5.6, 4, 2, media, 7);
+  const tagTex = (name) => texture((g, w, h) => {
+    g.fillStyle = '#2b2d30';
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#8a8c90';
+    g.lineWidth = 4;
+    g.strokeRect(4, 4, w - 8, h - 8);
+    g.fillStyle = '#e4e3de';
+    g.font = 'bold 40px monospace';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(name, w / 2, h / 2 + 2);
+  }, 256, 96);
+  const shell = std(0x3a3c40);
+  [['SONARR', 'RADARR'], ['LIDARR', 'BAZARR'], ['PROWLARR', 'RECYCLARR'], ['SABNZBD', 'UNMANIC']].forEach((row, r) => row.forEach((name, c) => {
+    const face = new THREE.MeshBasicMaterial({ map: tagTex(name) });
+    box(1.9, 0.95, 2.3, 3, 10.15 - r * 1.05, 4.3 + c * 2.4, [shell, face, shell, shell, shell, shell], media, { line: LINE_SOFT });
+  }));
   box(0.5, 4, 0.5, -4, 0, -4, M.mid, media);
   box(0.5, 4, 0.5, -4, 0, 4, M.mid, media);
   box(0.5, 6.4, 10.4, -4, 4, 0, M.dark, media);
@@ -649,7 +665,7 @@ function build() {
   box(1.3, 1.8, 1.1, -3, 0, 8.4, M.mid, media);
   box(0.9, 0.12, 0.06, -3.66, 1.3, 8.4, M.glow, media, { edges: false, cast: false }).rotation.y = Math.PI / 2;
   animators.push((t) => nasLeds.forEach((l, i) => { l.visible = Math.sin(t * (4 + (i % 5) * 2.3) + i * 1.7) > -0.2; }));
-  [['nas', 'NAS', 3, 11.5, -4], ['media', 'MEDIA SERVER', 3, 11, 5.5], ['jelly', 'JELLYFIN', -4, 10.8, 0], ['seerr', 'SEERR', -3, 2.4, 8.4]].forEach(([id, text, x, y, z]) => {
+  [['nas', 'NAS', 3, 11.5, -4], ['media', 'MEDIA SERVER', 3, 12.4, 5.5], ['jelly', 'JELLYFIN', -4, 10.8, 0], ['seerr', 'SEERR', -3, 2.4, 8.4]].forEach(([id, text, x, y, z]) => {
     const p = world(media, x, y, z);
     anchor(id, text, p.x, p.y, p.z);
   });
@@ -1281,11 +1297,29 @@ function build() {
       box(d * 0.66, h * 0.7, w * 0.66, 0, 0, 0, M.dark, g, { line: LINE_SOFT });
       lattice(0, 0, Math.min(d, w), h, Math.max(2, Math.round(h / 3)), g);
       const ch = h + 6 + rand() * 6;
-      lattice(d / 2, 0, 0.9, ch, Math.round(ch / 1.6), g, 0, LINE_SOFT);
+      box(2.2, 0.5, 2.2, d / 2, 0, 0, M.mid, g, { line: LINE_SOFT }); // footing
+      [-0.45, 0.45].forEach((x) => [-0.45, 0.45].forEach((z) => box(0.12, ch - 1, 0.12, d / 2 + x, 0.5, z, M.light, g, { edges: false })));
+      lattice(d / 2, 0, 0.9, ch - 1, Math.round(ch / 1.2), g, 0.5, LINE);
       const jib = new THREE.Group();
       jib.position.set(d / 2, ch, 0);
-      lines([-3, 0, 0, 9, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 9, 0, 0, 0, 2, 0, -3, 0, 0, 7, 0, 0, 7, -4 - rand() * 4, 0], LINE_SOFT, jib);
       g.add(jib);
+      box(1.3, 0.8, 1.3, 0, -0.8, 0, M.mid, jib, { line: LINE_SOFT }); // slewing ring
+      box(1, 0.9, 0.9, 0.9, -0.85, 0.95, M.mid, jib, { line: LINE_SOFT }); // operator cab
+      box(0.04, 0.4, 0.7, 1.42, -0.6, 0.95, M.glow, jib, { edges: false, cast: false });
+      box(0.3, 2.6, 0.3, 0, 0, 0, M.light, jib, { edges: false }); // apex
+      box(10, 0.3, 0.6, 5.6, 0, 0, M.light, jib, { line: LINE_SOFT }); // jib
+      box(3.8, 0.3, 0.8, -2.4, 0, 0, M.light, jib, { line: LINE_SOFT }); // counter-jib
+      box(1.2, 1.3, 1, -3.7, -1.3, 0, M.dark, jib, { line: LINE }); // counterweight
+      const truss = [];
+      for (let x = 0.6; x < 10.6; x += 1) {
+        const top = (x2) => 1 - (x2 - 0.6) * 0.06; // the top chord tapers toward the tip
+        truss.push(x, 0.3, 0, x + 0.5, top(x + 0.5), 0, x + 0.5, top(x + 0.5), 0, x + 1, 0.3, 0, x, top(x), 0, x + 1, top(x + 1), 0);
+      }
+      lines(truss, LINE, jib);
+      const hook = 4 + rand() * 4;
+      lines([0, 2.6, 0, 7.5, 0.6, 0, 0, 2.6, 0, -4.2, 0.3, 0, 7, -0.2, 0, 7, -hook, 0], LINE, jib); // pendants and hoist rope
+      box(0.7, 0.25, 0.8, 7, -0.25, 0, M.mid, jib, { edges: false }); // trolley
+      box(0.45, 0.6, 0.45, 7, -hook - 0.6, 0, M.dark, jib, { line: LINE }); // hook block
       cranes.push({ jib, speed: (rand() - 0.5) * 0.3, phase: rand() * 6 });
     },
     // a warehouse with a sawtooth roof
@@ -1670,13 +1704,26 @@ function build() {
 
   // ---------- A plane overhead, the kind the LED wall tracks ----------
   const plane = new THREE.Group();
-  box(5, 0.7, 0.7, 0, -0.35, 0, M.light, plane);
-  box(1.4, 0.12, 6.4, 0.2, 0, 0, M.light, plane);
-  box(0.8, 0.1, 2.4, -2.2, 0, 0, M.light, plane);
-  box(0.7, 1.3, 0.1, -2.2, 0, 0, M.light, plane);
-  const navRed = box(0.25, 0.25, 0.25, 0.2, 0, -3.3, M.glow, plane, { edges: false, cast: false });
-  const navGreen = box(0.25, 0.25, 0.25, 0.2, 0, 3.3, M.glow, plane, { edges: false, cast: false });
-  const strobe = box(0.3, 0.3, 0.3, -2.6, 1.3, 0, M.glow, plane, { edges: false, cast: false });
+  mesh(new THREE.CylinderGeometry(0.42, 0.42, 4.4, 20), M.light, 0, 0, 0, plane, { line: LINE_FAINT }).rotation.z = Math.PI / 2; // fuselage
+  mesh(new THREE.SphereGeometry(0.42, 20, 12), M.light, 2.2, 0, 0, plane, { edges: false }).scale.set(1.8, 1, 1); // nose
+  mesh(new THREE.CylinderGeometry(0.12, 0.42, 1.8, 20), M.light, -3.1, 0.1, 0, plane, { edges: false }).rotation.z = Math.PI / 2 - 0.08; // tail cone
+  box(3.4, 0.1, 0.86, 0.2, 0.08, 0, M.glow, plane, { edges: false, cast: false }); // the window line
+  box(0.3, 0.08, 0.44, 2.45, 0.27, 0, M.dark, plane, { edges: false, cast: false }); // windshield
+  // a swept, tapered planform as [x, z] corners, extruded thin and laid flat
+  const planform = (pts, side, y, mat = M.light) => {
+    const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, side * z)));
+    const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false });
+    mesh(geo, mat, 0, y, 0, plane, { line: LINE_SOFT }).rotation.x = Math.PI / 2;
+  };
+  [-1, 1].forEach((side) => {
+    planform([[0.9, 0.3], [-0.5, 0.3], [-1.6, 3.3], [-1.05, 3.3]], side, -0.2); // swept wing
+    mesh(new THREE.CylinderGeometry(0.24, 0.2, 1, 14), M.mid, 0.45, -0.52, side * 1.45, plane, { line: LINE_SOFT }).rotation.z = Math.PI / 2; // engine
+    planform([[-2.9, 0.15], [-3.6, 0.15], [-4.1, 1.5], [-3.75, 1.5]], side, 0.22); // tailplane
+  });
+  box(1.2, 1.5, 0.1, -3.2, 0.2, 0, M.light, plane, { line: LINE_SOFT }).rotation.z = 0.45; // fin
+  const navRed = box(0.22, 0.22, 0.22, -1.35, -0.32, -3.3, M.glow, plane, { edges: false, cast: false });
+  const navGreen = box(0.22, 0.22, 0.22, -1.35, -0.32, 3.3, M.glow, plane, { edges: false, cast: false });
+  const strobe = box(0.26, 0.26, 0.26, -3.5, 1.65, 0, M.glow, plane, { edges: false, cast: false });
   scene.add(plane);
   let planeRgb = false;
   let rollStart = -10;
@@ -1690,6 +1737,45 @@ function build() {
     plane.rotation.set(0.12 + (roll < 1 ? roll * Math.PI * 2 : 0), -a - Math.PI / 2, 0);
     strobe.visible = (t % 1.4) < 0.08;
     navRed.visible = navGreen.visible = (t % 1) < 0.7;
+  });
+
+  // ---------- Data paths: visitor -> Cloudflare -> gateway -> each service, plus the DNS Pi's own lookups ----------
+  const pathMat = new THREE.MeshBasicMaterial({ color: 0xeeede8, transparent: true, opacity: 0.45 });
+  const riders = [];
+  function link(a, b, lift, r = 0.1, n = 2) {
+    const mid = a.clone().lerp(b, 0.5);
+    mid.y = Math.max(a.y, b.y) + lift;
+    const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+    city.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, r, 6, false), pathMat));
+    const speed = 7 / curve.getLength();
+    for (let i = 0; i < n; i += 1) riders.push({ curve, t: i / n, speed: i % 2 ? -speed : speed });
+  }
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const gwPort = V(0, 2.8, 0);
+  const cfPort = world(gate, -0.9, 7.6, 0);
+  const inetC = V(ix, 27, iz);
+  link(inetC.clone().add(cfPort.clone().sub(inetC).setLength(6.2)), cfPort, 2, 0.2, 6); // visitors reach Cloudflare first
+  link(cfPort, gwPort, 4, 0.2, 6); // the tunnel: Cloudflare to the gateway
+  [world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, -2), world(mc, -5, 2, 0), ledPi, world(lab, -1.5, 3.5, 0),
+    world(lab, 2.5, 1.5, -11), world(helpers, -1.5, 4, 0), dnsTop].forEach((p) => link(gwPort, p, 5));
+  link(cfPort, world(plaza, -1.5, 5, 0), 12, 0.1, 3); // the Launcher lives at Cloudflare, not at home
+  link(dnsTop, inetC.clone().add(dnsTop.clone().sub(inetC).setLength(6.2)), 6, 0.1, 3); // the DNS Pi resolves straight from the root servers
+  // inside the media district: Seerr <-> Jellyfin, Seerr -> the *arr containers -> the NAS -> Jellyfin
+  link(world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, 4), 2);
+  link(world(media, -3, 1.9, 8.4), world(media, 2, 10.6, 5.5), 2);
+  link(world(media, 3, 11.1, 4.3), world(media, 3, 10.4, -2), 2);
+  link(world(media, 1, 10.4, -3), world(media, -4, 10.4, -3), 2);
+  const riderMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), M.glow, riders.length);
+  city.add(riderMesh);
+  animators.push((t, dt) => {
+    riders.forEach((p, n) => {
+      p.t = (((p.t + p.speed * dt) % 1) + 1) % 1;
+      p.curve.getPoint(p.t, tmp.position);
+      tmp.rotation.set(0, 0, 0);
+      tmp.updateMatrix();
+      riderMesh.setMatrixAt(n, tmp.matrix);
+    });
+    riderMesh.instanceMatrix.needsUpdate = true;
   });
 
   // ---------- Traffic: packets on the rings and the radial roads ----------
