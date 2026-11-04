@@ -31,7 +31,7 @@
   <!-- The 3D city behind the chapters (city.js); the flat map below is the fallback without WebGL. -->
   <canvas id="city" aria-hidden="true"></canvas>
   <div id="labels" aria-hidden="true"></div>
-  <div id="readout" aria-hidden="true"><span>Field width</span><b id="fieldWidth">0</b><i></i></div>
+  <div id="readout" aria-hidden="true"><span>Field width</span><b id="fieldWidth">0</b><i></i><small id="fieldMeta"></small></div>
   <svg id="scene" aria-hidden="true" preserveAspectRatio="xMidYMid meet"></svg>
 
   <nav id="rail" aria-label="Chapters">
@@ -54,19 +54,22 @@
         <li><button type="button" data-go="ch-04">Media</button></li>
         <li><button type="button" data-go="ch-05">Minecraft</button></li>
         <li><button type="button" data-go="ch-06">LED dashboard</button></li>
-        <li><button type="button" data-go="ch-07">Lab bench</button></li>
-        <li><button type="button" data-go="ch-08">Services</button></li>
+        <li><button type="button" data-go="ch-07">LLM Scanner</button></li>
+        <li><button type="button" data-go="ch-08">Hardening</button></li>
+        <li><button type="button" data-go="ch-09">Services</button></li>
       </ol>
       <span class="idx-mark" aria-hidden="true"></span>
     </div>
     <div class="group">
       <p class="head">Extras</p>
       <ol class="nav circle">
-        <li><button type="button" data-go="ch-08">Quick launch</button></li>
+        <li><button type="button" data-go="ch-09">Quick launch</button></li>
+        <li><button type="button" data-projects>Projects</button></li>
         <li><button type="button" id="eggBtn">Eggs 0/13</button></li>
         <li><a href="https://kadn.cloudflareaccess.com/#/" target="_blank" rel="noopener">Launcher</a></li>
       </ol>
     </div>
+    <p class="lab" id="labState">Checking the lab</p>
     <p class="sign">KADENTSv<span>3.0.0</span></p>
   </nav>
 
@@ -83,7 +86,7 @@
     <section class="landing" id="top" aria-labelledby="title">
       <button class="loadline" id="loaderBar" type="button" tabindex="-1" aria-hidden="true"><span id="loaderPct">Loading 0%</span><i id="loaderFill"></i></button>
       <h1 id="title">KADENTS</h1>
-      <p class="sub">A visual representation of my homelab and the services it runs</p>
+      <p class="sub">A visual representation of my homelab, and the projects I build in it</p>
 
       <div class="drawing">
         <svg id="map" viewBox="0 0 560 372" role="img" aria-labelledby="mapTitle">
@@ -100,11 +103,11 @@
           <g class="node" data-id="cf" data-go="ch-02" data-label="Cloudflare edge. The front door and its bouncer."><rect x="85" y="48" width="22" height="22" /></g>
           <g class="node" data-id="gw" data-go="ch-03" data-label="Gateway. Routing, firewall and addresses."><rect x="80" y="92" width="450" height="20" /></g>
           <g class="node rogue" data-id="rogue" data-egg="rogue" data-label="Unknown device."><circle cx="546" cy="102" r="3.5" /></g>
-          <g class="node" data-id="desk" data-go="ch-07" data-label="Desktop. The lab bench."><rect x="92" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="desk" data-go="ch-07" data-label="Desktop. Where the LLM Scanner runs."><rect x="92" y="134" width="34" height="56" /></g>
           <g class="node" data-id="media" data-go="ch-04" data-label="Media server. Runs the apps."><rect x="154" y="134" width="34" height="56" /></g>
           <g class="node" data-id="nas" data-go="ch-04" data-label="NAS. The big box of drives."><rect x="216" y="134" width="34" height="56" /></g>
           <g class="node" data-id="dns" data-go="ch-03" data-label="DNS Pi. Blocks ads for the whole house."><rect x="278" y="134" width="34" height="56" /></g>
-          <g class="node" data-id="svc" data-go="ch-02" data-label="Services Pi. Small always-on helpers."><rect x="340" y="134" width="34" height="56" /></g>
+          <g class="node" data-id="svc" data-go="ch-08" data-label="Helpers Pi. Hardened, key-only."><rect x="340" y="134" width="34" height="56" /></g>
           <g class="node" data-id="ledpi" data-go="ch-06" data-label="LED Pi. Drives the 64×64 matrix."><rect x="402" y="134" width="34" height="56" /></g>
           <g class="node" data-id="radio" data-go="ch-07" data-label="Radio Pi. Listens to the airwaves."><rect x="464" y="134" width="34" height="56" /></g>
           <g class="node" data-id="bus" data-go="ch-04" data-label="Bus. How the machines share work."><rect x="80" y="212" width="450" height="8" /></g>
@@ -115,7 +118,7 @@
             <rect x="350" y="242" width="100" height="100" />
             <path class="grid" d="M362.5 242V342M375 242V342M387.5 242V342M400 242V342M412.5 242V342M425 242V342M437.5 242V342M350 254.5H450M350 267H450M350 279.5H450M350 292H450M350 304.5H450M350 317H450M350 329.5H450" />
           </g>
-          <g class="node" data-id="launch" data-go="ch-08" data-label="Launcher. Every service behind one door."><circle cx="500" cy="302" r="44" /></g>
+          <g class="node" data-id="launch" data-go="ch-09" data-label="Launcher. Every service behind one door."><circle cx="500" cy="302" r="44" /></g>
           <g class="labels">
             <text data-for="inet" x="38" y="16">INTERNET</text>
             <text data-for="cf" x="112" y="62">CLOUDFLARE</text>
@@ -152,7 +155,7 @@
           <h2>A homelab, drawn as a map <span class="m">of the machines that run it</span></h2>
           <p>A homelab is a handful of computers at home doing jobs people usually rent from big companies: storing files, streaming movies, running a game server.</p>
           <p>Each shape on this map is one machine or service. The lines show how they connect.</p>
-          <p>The next seven chapters walk through it, one part at a time.</p>
+          <p>The next eight chapters walk through it, one part at a time, including three projects I built here.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
           <header><span class="n">01</span><span class="t">Introduction</span></header>
@@ -278,54 +281,123 @@
       <div class="track">
         <div class="ver" data-ver="eli5"><div class="panel">
           <header><span class="n">06</span><span class="t">LED dashboard</span></header>
-          <h2>4,096 tiny lights <span class="m">on the wall</span></h2>
-          <p>A board of tiny lights shows the time and whatever else I tell it to. The copy below works. Click it.</p>
+          <h2>4,096 tiny lights <span class="m">that know what's happening</span></h2>
+          <p>A board of tiny lights on the wall cycles through the time, the weather, the sunrise and my photos.</p>
+          <p>When something is actually happening, it interrupts itself: a storm warning, a plane flying overhead, the space station passing, a song playing, or a phone sharing its screen to it.</p>
+          <p>The copy below works. Click it.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
           <header><span class="n">06</span><span class="t">LED dashboard</span></header>
-          <div class="origin"><span>Runs on</span><b>Raspberry Pi 4</b></div>
-          <h2>A 64×64 HUB75 matrix driven by a Pi</h2>
-          <p>It renders clocks, scrolling text and status panels. The copy below is a software version drawn on a canvas.</p>
+          <div class="origin"><span>Runs on</span><b>Raspberry Pi 4 · 64×64 HUB75</b></div>
+          <h2>A priority ladder that decides what the wall shows</h2>
+          <p>Two Python processes and no database: a render loop at about 2 fps that pipes frames to a small C++ driver built on the rpi-rgb-led-matrix library, and a Flask app for setting it up from a phone.</p>
+          <div class="flow">AirPlay → flight overhead → space station → music → locked slide → rotation</div>
+          <ul class="tech-list">
+            <li><b>Flights:</b> its own ADS-B receiver first, public ADS-B feeds as backup, routes checked against the plane's position.</li>
+            <li><b>Faces:</b> 33 clock faces, including a rendered Earth with the day and night line and a hand-tuned pixel aquarium.</li>
+            <li><b>Weather:</b> forecast, a radar loop, severe weather alerts, air quality and UV.</li>
+            <li><b>Music and AirPlay:</b> Spotify, Last.fm and HomePods, and phone mirroring scaled down to 64×64.</li>
+            <li><b>Testing:</b> five suites, 1,013 checks.</li>
+          </ul>
         </div></div>
         <div class="ver" data-ver="comm"><div class="panel">
           <header><span class="n">06</span><span class="t">LED dashboard</span></header>
-          <p>My favorite project. It's useless in the best way.</p>
+          <p>My favorite project: 144 commits in four months, most of them late at night. The hardest bug was electrical. The Pi talks at 3.3 volts and the panel expects 5, so the picture tore until I slowed the signal way down.</p>
+          <p>It's useless in the best way.</p>
         </div></div>
       </div>
       <figure class="panel led">
         <canvas id="led" width="320" height="320" aria-label="Simulated LED matrix. Click to change what it shows."></canvas>
         <figcaption>Click to change mode</figcaption>
       </figure>
+      <aside class="panel project">
+        <header><span class="n">Project</span><span class="t">LED Dashboard</span></header>
+        <dl>
+          <div><dt>Status</dt><dd>Active</dd></div>
+          <div><dt>Stack</dt><dd>Python · C++ · Flask · JavaScript</dd></div>
+          <div><dt>Size</dt><dd>144 commits · 1,013 test checks</dd></div>
+          <div><dt>Code</dt><dd>Private repository</dd></div>
+        </dl>
+      </aside>
     </section>
 
-    <section class="stage" id="ch-07" data-focus="70 118 450 92" data-lit="desk radio">
+    <section class="stage" id="ch-07" data-focus="70 118 450 92" data-lit="desk">
       <div class="track">
         <div class="ver" data-ver="eli5"><div class="panel">
-          <header><span class="n">07</span><span class="t">Lab bench</span></header>
-          <h2>Breaking things <span class="m">on purpose</span></h2>
-          <p>Security people learn by trying to break things, safely, on their own equipment.</p>
-          <p>This corner of the lab is where I do that, including testing whether AI chatbots can be tricked.</p>
+          <header><span class="n">07</span><span class="t">LLM Scanner</span></header>
+          <h2>Can an AI <span class="m">be talked into things?</span></h2>
+          <p>AI chatbots can be tricked into saying or doing things they shouldn't.</p>
+          <p>LLM Scanner is an app I built that downloads AI models onto one computer, chats with them, then throws hundreds of automatic trick questions at them. At the end it writes a report of what got through.</p>
         </div></div>
         <div class="ver" data-ver="tech"><div class="panel">
-          <header><span class="n">07</span><span class="t">Lab bench</span></header>
-          <div class="origin"><span>Runs on</span><b>Workstation · radio Pi</b></div>
-          <h2>Scanning, LLM red-teaming and radio</h2>
+          <header><span class="n">07</span><span class="t">LLM Scanner</span></header>
+          <div class="origin"><span>Runs on</span><b>One machine · Gradio</b></div>
+          <h2>A local red-team workbench for language models</h2>
+          <p>A self-contained Gradio app that finds and downloads models from Hugging Face and the Ollama library, chats with them, and scans chat models with NVIDIA's garak.</p>
+          <div class="flow">Download → chat → garak probes → analyst report</div>
           <ul class="tech-list">
-            <li><b>Scanning:</b> vulnerability scans of my own hosts and images.</li>
-            <li><b>LLM Scanner:</b> a Gradio front end that runs garak, Promptfoo and PyRIT against local models.</li>
-            <li><b>Radio:</b> a software-defined radio Pi listens to the airwaves.</li>
+            <li><b>Scans:</b> saved probe groups for the OWASP LLM Top 10, a baseline assessment and NIST AI 600-1 risk areas, with pause, resume and stuck-probe recovery.</li>
+            <li><b>Reports:</b> executive summary, OWASP mapping, findings with evidence and fixes, plus the raw data as CSV.</li>
+            <li><b>Red team tools:</b> launches promptfoo and PyRIT locally against the installed models.</li>
+            <li><b>Upkeep:</b> verified one-click updates that roll back if anything fails.</li>
           </ul>
         </div></div>
         <div class="ver" data-ver="comm"><div class="panel">
-          <header><span class="n">07</span><span class="t">Lab bench</span></header>
+          <header><span class="n">07</span><span class="t">LLM Scanner</span></header>
+          <p>I wanted to assess AI models the way I'd assess anything else: run the tests, keep the evidence, write it up. It shipped fourteen releases on its first day.</p>
           <p>Studying for Network+ and Security+ goes a lot faster when there's something real to poke at.</p>
         </div></div>
       </div>
+      <aside class="panel project">
+        <header><span class="n">Project</span><span class="t">LLM Scanner</span></header>
+        <dl>
+          <div><dt>Status</dt><dd>Active · release 1.1.10</dd></div>
+          <div><dt>Stack</dt><dd>Python · Gradio · Ollama · garak</dd></div>
+          <div><dt>Size</dt><dd>34 commits · 11 test files</dd></div>
+          <div><dt>Code</dt><dd><a href="https://github.com/Kadn0/llm-scanner" target="_blank" rel="noopener">github.com/Kadn0/llm-scanner</a></dd></div>
+        </dl>
+      </aside>
     </section>
 
-    <section class="stage" id="ch-08" data-focus="340 190 220 190" data-lit="launch">
+    <section class="stage" id="ch-08" data-focus="318 112 92 100" data-lit="svc">
+      <div class="track">
+        <div class="ver" data-ver="eli5"><div class="panel">
+          <header><span class="n">08</span><span class="t">Hardening</span></header>
+          <h2>Locking every door <span class="m">without locking myself out</span></h2>
+          <p>Every computer in the lab used to accept passwords for remote logins, and passwords can be guessed.</p>
+          <p>I wrote scripts that switch every machine to digital keys instead, check each one for weak spots, and test every web page the lab serves from the outside.</p>
+        </div></div>
+        <div class="ver" data-ver="tech"><div class="panel">
+          <header><span class="n">08</span><span class="t">Hardening</span></header>
+          <div class="origin"><span>Runs from</span><b>Workstation · PowerShell + Bash</b></div>
+          <h2>Key-only SSH with an automatic rollback</h2>
+          <div class="flow">Install key → prove login → harden → verify → cancel rollback</div>
+          <ul class="tech-list">
+            <li><b>setup-ssh-keys:</b> installs an ed25519 key on each host and proves key login before anything else changes.</li>
+            <li><b>harden-hosts:</b> switches a host to key-only SSH with a three-minute rollback, cancelled only after a fresh login works.</li>
+            <li><b>host-audit:</b> a read-only snapshot of updates, open ports, firewall, accounts, sudo, logins, kernel settings, cron and Docker.</li>
+            <li><b>probe-services:</b> unauthenticated requests to every web service, checking status, auth, TLS and headers.</li>
+          </ul>
+        </div></div>
+        <div class="ver" data-ver="comm"><div class="panel">
+          <header><span class="n">08</span><span class="t">Hardening</span></header>
+          <p>The rollback timer is the part I like most. If a change locks me out, the machine undoes it by itself three minutes later.</p>
+        </div></div>
+      </div>
+      <aside class="panel project">
+        <header><span class="n">Project</span><span class="t">Homelab hardening scripts</span></header>
+        <dl>
+          <div><dt>Status</dt><dd>Done · run October 2026</dd></div>
+          <div><dt>Stack</dt><dd>PowerShell · Bash · OpenSSH</dd></div>
+          <div><dt>Size</dt><dd>4 scripts, 2 of them read-only</dd></div>
+          <div><dt>Code</dt><dd>Not published</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <section class="stage" id="ch-09" data-focus="340 190 220 190" data-lit="launch">
       <div class="panel services">
-        <header><span class="n">08</span><span class="t">Services</span></header>
+        <header><span class="n">09</span><span class="t">Services</span></header>
         <h2>Quick launch <span class="m">for everything here</span></h2>
         <div class="status-bar" aria-label="Live service health">
           <div class="status-chip" id="nas-status" role="status" aria-live="polite" tabindex="0">Checking NAS...</div>
@@ -372,9 +444,30 @@
           <span>&copy; 2025&ndash;2026 Kaden</span>
         </footer>
       </div>
+      <aside class="panel project">
+        <header><span class="n">Project</span><span class="t">This site</span></header>
+        <dl>
+          <div><dt>Status</dt><dd>Live at kadents.com</dd></div>
+          <div><dt>Stack</dt><dd>HTML · CSS · JavaScript · three.js</dd></div>
+          <div><dt>Hosting</dt><dd>GitHub Pages behind Cloudflare</dd></div>
+          <div><dt>Code</dt><dd><a href="https://github.com/Kadn0/Domain" target="_blank" rel="noopener">github.com/Kadn0/Domain</a></dd></div>
+        </dl>
+      </aside>
     </section>
   </main>
 
+  <template id="projectsTpl">
+    <h3>Projects</h3>
+    <p>I'm Kaden, a cyber security analyst. I build things at home to learn how they break: the lab on this page, and these projects.</p>
+    <ul class="plist">
+      <li><button type="button" data-goto="ch-06"><b>LED Dashboard</b><span>A 64×64 LED wall display that knows what's happening: flights overhead, weather, music, AirPlay.</span><small>Python · C++ · Flask · active</small></button></li>
+      <li><button type="button" data-goto="ch-07"><b>LLM Scanner</b><span>A local workbench that downloads AI models and red-teams them with garak, promptfoo and PyRIT.</span><small>Python · Gradio · release 1.1.10</small></button></li>
+      <li><button type="button" data-goto="ch-08"><b>Homelab hardening</b><span>Scripts that move every host to key-only SSH with an automatic rollback, then audit and probe them.</span><small>PowerShell · Bash · done</small></button></li>
+      <li><button type="button" data-goto="ch-09"><b>kadents.com</b><span>This site: a 3D map of the lab and the front door to its services.</span><small>JavaScript · three.js · live</small></button></li>
+    </ul>
+    <p class="mono">More on GitHub: <a href="https://github.com/Kadn0" target="_blank" rel="noopener">github.com/Kadn0</a></p>
+    <div class="card-actions"><button class="btn primary" type="button" data-close>Close</button></div>
+  </template>
   <form class="console" id="console" hidden>
     <label for="cmd">&gt;</label>
     <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type a word">

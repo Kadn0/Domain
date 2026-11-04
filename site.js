@@ -109,6 +109,17 @@ const openEggs = () => {
 };
 document.querySelectorAll('#eggBtn, [data-eggs]').forEach((button) => button.addEventListener('click', openEggs));
 
+// ---------- Projects page ----------
+document.querySelectorAll('[data-projects]').forEach((button) => button.addEventListener('click', () => {
+  openModal($('projectsTpl').innerHTML);
+}));
+card.addEventListener('click', (event) => {
+  const link = event.target.closest('[data-goto]');
+  if (!link) return;
+  closeModal();
+  goTo(link.dataset.goto);
+});
+
 // ---------- Reading versions ----------
 const MODES = ['eli5', 'tech', 'comm'];
 const versMark = document.querySelector('#rail .vers-mark');
@@ -418,6 +429,21 @@ $('console').addEventListener('submit', (event) => {
   $('cmd').value = '';
   if (value && !checkWords(value)) toast(`Unknown command: ${value.slice(0, 20)}`);
 });
+
+// ---------- Lab light in the rail, following the live NAS check ----------
+const labState = $('labState');
+const nasChip = $('nas-status');
+if (labState && nasChip) {
+  const mirror = () => {
+    const up = nasChip.classList.contains('is-online');
+    const down = nasChip.classList.contains('is-offline');
+    labState.classList.toggle('up', up);
+    labState.classList.toggle('down', down);
+    labState.textContent = up ? 'Lab online' : down ? 'Lab offline' : 'Checking the lab';
+  };
+  new MutationObserver(mirror).observe(nasChip, { attributes: true, attributeFilter: ['class'] });
+  mirror();
+}
 
 // ---------- Ping ----------
 let pings = 0;
