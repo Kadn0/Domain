@@ -38,15 +38,15 @@ function build() {
   renderer.setClearColor(BG, 1);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(BG, 130, 330);
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 700);
+  scene.fog = new THREE.Fog(BG, 230, 600);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 1100);
 
   scene.add(new THREE.HemisphereLight(0xdadbd6, 0x121314, 0.62));
   const sun = new THREE.DirectionalLight(0xffffff, 0.85);
-  sun.position.set(45, 90, 25);
+  sun.position.set(80, 150, 45);
   sun.castShadow = true;
   sun.shadow.mapSize.set(narrow() ? 1024 : 2048, narrow() ? 1024 : 2048);
-  Object.assign(sun.shadow.camera, { left: -75, right: 75, top: 75, bottom: -75, near: 10, far: 240 });
+  Object.assign(sun.shadow.camera, { left: -125, right: 125, top: 125, bottom: -125, near: 10, far: 420 });
   sun.shadow.bias = -0.0006;
   scene.add(sun);
 
@@ -183,21 +183,23 @@ function build() {
   const stripeMat = std(0xffffff, { map: texture(stripes) });
 
   // ---------- Ground: a circuit board of rings and traces ----------
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(170, 120), M.ground);
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(300, 160), M.ground);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
-  [5, 14, 19, 24, 31, 44, 50, 58, 70, 84, 100, 120].forEach((r) => circle(r, 0.03));
+  [5, 14, 19, 24, 31, 56, 62, 96, 110, 130, 160, 200, 250].forEach((r) => circle(r, 0.03));
   const traces = [];
   for (let d = 0; d < 360; d += 7.5) {
     const [x1, z1] = polar(d, 12);
-    const [x2, z2] = polar(d, 130);
+    const [x2, z2] = polar(d, 250);
     traces.push(x1, 0.03, z1, x2, 0.03, z2);
   }
   lines(traces, LINE_FAINT);
 
   // ---------- Roads ----------
   const DISTRICTS = [0, 45, 90, 135, 180, 225, 270, 315];
+  const DR = 42; // the services ring
+  const WALL_R = 104; // the hardening wall around everything
   const ringRoad = (r1, r2, y, parent = city) => {
     const m = new THREE.Mesh(new THREE.RingGeometry(r1, r2, 128), M.road);
     m.rotation.x = -Math.PI / 2;
@@ -209,21 +211,22 @@ function build() {
   };
   ringRoad(8, 10.5, 0.06);
   DISTRICTS.forEach((deg) => {
-    const [x, z] = polar(deg, 22.5);
-    const road = box(24, 0.12, 2.6, x, 0, z, M.road, city, { line: LINE_SOFT, cast: false });
+    const reach = deg === 0 ? 124 : DR + 10; // the 0-degree avenue runs out through the wall to Cloudflare
+    const [x, z] = polar(deg, (10.5 + reach) / 2);
+    const road = box(reach - 10.5, 0.12, 2.6, x, 0, z, M.road, city, { line: LINE_SOFT, cast: false });
     road.rotation.y = -rad(deg);
   });
   // the raised outer ring, on pillars, the way the reference's highways sit over everything
   const HIGH = 4.2;
-  ringRoad(35, 37.6, HIGH);
-  const under = new THREE.Mesh(new THREE.RingGeometry(35, 37.6, 128), M.dark);
+  ringRoad(58, 60.6, HIGH);
+  const under = new THREE.Mesh(new THREE.RingGeometry(58, 60.6, 160), M.dark);
   under.rotation.x = Math.PI / 2;
   under.position.y = HIGH - 0.05;
   city.add(under);
-  circle(35, HIGH + 0.6, LINE_SOFT);
-  circle(37.6, HIGH + 0.6, LINE_SOFT);
-  for (let d = 0; d < 360; d += 9) {
-    const [x, z] = polar(d, 36.3);
+  circle(58, HIGH + 0.6, LINE_SOFT);
+  circle(60.6, HIGH + 0.6, LINE_SOFT);
+  for (let d = 0; d < 360; d += 6) {
+    const [x, z] = polar(d, 59.3);
     box(0.7, HIGH, 0.7, x, 0, z, M.mid, city, { line: LINE_SOFT });
   }
 
@@ -329,7 +332,7 @@ function build() {
   anchor('gw', 'GATEWAY', 0, 8.4, 0);
 
   // ---------- 02 Front door: a security checkpoint, with the internet as a globe in the sky ----------
-  const gate = district(0, 30);
+  const gate = district(0, 122);
   // the scanner arch the road passes through
   box(1.1, 7.2, 1.1, 0, 0, -2.6, M.mid, gate);
   box(1.1, 7.2, 1.1, 0, 0, 2.6, M.mid, gate);
@@ -383,8 +386,11 @@ function build() {
   });
   // the internet: a globe with grayscale continents, a lat/long grid and a faint atmosphere
   const inet = new THREE.Group();
-  const [ix, iz] = polar(0, 54);
-  inet.position.set(ix, 27, iz);
+  const [ix, iz] = polar(0, 172);
+  const IY = 44;
+  const IS = 1.9; // the internet is bigger than the city
+  inet.position.set(ix, IY, iz);
+  inet.scale.setScalar(IS);
   city.add(inet);
   const earthTex = texture((g, w, h) => {
     g.fillStyle = '#1b1c1e';
@@ -439,7 +445,7 @@ function build() {
   const fan = [];
   for (let i = 0; i < 18; i += 1) {
     const p = world(gate, (rand() - 0.5) * 1.4, 7.8, (rand() - 0.5) * 5);
-    fan.push(ix, 27, iz, p.x, p.y, p.z);
+    fan.push(ix, IY, iz, p.x, p.y, p.z);
   }
   lines(fan, LINE_SOFT);
   // packets sliding down the beam from the internet to the gate
@@ -461,12 +467,12 @@ function build() {
     });
     beamMesh.instanceMatrix.needsUpdate = true;
   });
-  anchor('inet', 'INTERNET', ix, 34.5, iz);
+  anchor('inet', 'INTERNET', ix, IY + 15, iz);
   const cfTop = world(gate, 0, 9, 0);
   anchor('cf', 'CLOUDFLARE', cfTop.x, cfTop.y, cfTop.z);
 
   // ---------- 03 Network: the DNS Pi, a single-board computer under a glowing shield, beside a mast ----------
-  const dns = district(45, 26);
+  const dns = district(45, DR - 1);
   box(6, 0.5, 5, 0, 0, 0, M.mid, dns);
   const pcbTex = texture((g, w, h) => {
     g.fillStyle = '#585b60';
@@ -551,7 +557,7 @@ function build() {
   anchor('dns', 'DNS PI', dnsTop.x, dnsTop.y, dnsTop.z);
 
   // ---------- 04 Media: NAS tower, media server, Jellyfin screen, Seerr box ----------
-  const media = district(90, 27);
+  const media = district(90, DR);
   // the NAS: a giant network storage box, front facing the hub, with five hot-swap drive trays
   const nas = new THREE.Group();
   nas.position.set(3, 0, -4);
@@ -671,7 +677,7 @@ function build() {
   });
 
   // ---------- 05 Minecraft: a floating chunk of a blocky sandbox world, in my own grayscale pixel textures ----------
-  const mc = district(135, 27);
+  const mc = district(135, DR);
   const pixTex = (draw) => {
     const t = texture(draw, 16, 16);
     t.magFilter = THREE.NearestFilter;
@@ -865,7 +871,7 @@ function build() {
   anchor('mc', 'MINECRAFT', mcTop.x, mcTop.y, mcTop.z);
 
   // ---------- 06 LED: a billboard showing the page's own 64x64 matrix ----------
-  const led = district(180, 27);
+  const led = district(180, DR);
   box(0.7, 7, 0.7, 1, 0, -5.4, M.mid, led);
   box(0.7, 7, 0.7, 1, 0, 5.4, M.mid, led);
   box(1, 12.4, 12.4, 1.2, 6.4, 0, M.dark, led);
@@ -885,7 +891,7 @@ function build() {
   anchor('ledpi', 'LED PI', ledPi.x, ledPi.y, ledPi.z);
 
   // ---------- 07 Lab bench: desk, tower, monitors and the radio dish ----------
-  const lab = district(225, 27);
+  const lab = district(225, DR);
   box(4, 0.35, 8.5, 0, 3, 0, M.mid, lab);
   [[-1.7, -4], [1.7, -4], [-1.7, 4], [1.7, 4]].forEach(([x, z]) => box(0.3, 3, 0.3, x, 0, z, M.dark, lab));
   box(2, 4.4, 4.2, 0.6, 0, 6.6, towerMats[0], lab);
@@ -1058,7 +1064,7 @@ function build() {
   anchor('printer', '3D PRINTER', printerTop.x, printerTop.y, printerTop.z);
 
   // ---------- 10 Off the clock: a giant retro handheld playing snake at the edge of town ----------
-  const HANDHELD_AT = [160, 45];
+  const HANDHELD_AT = [158, 78];
   const arcade = district(...HANDHELD_AT);
   const handheld = new THREE.Group();
   handheld.position.set(0, 0, 0);
@@ -1132,7 +1138,7 @@ function build() {
   anchor('handheld', 'RETRO HANDHELD', hhTop.x, hhTop.y, hhTop.z);
 
   // ---------- 08 Services: the Launcher plaza ----------
-  const plaza = district(270, 27);
+  const plaza = district(270, DR);
   mesh(new THREE.CylinderGeometry(8.4, 8.4, 0.8, 64), M.mid, 0, 0.4, 0, plaza);
   for (let i = 0; i < 20; i += 1) {
     const a = (i / 20) * Math.PI * 2;
@@ -1162,7 +1168,7 @@ function build() {
   anchor('launch', 'LAUNCHER', lTop.x, lTop.y, lTop.z);
 
   // ---------- Helpers Pi: a stacked cluster case ----------
-  const helpers = district(315, 25);
+  const helpers = district(315, WALL_R - 10);
   box(5, 0.5, 5, 0, 0, 0, M.mid, helpers);
   lattice(0, 0, 3.4, 7, 6, helpers, 0.5, LINE_SOFT);
   const leds = [];
@@ -1199,20 +1205,69 @@ function build() {
   const hTop = world(helpers, 0, 13.6, 0);
   anchor('svc', 'HARDENING', hTop.x, hTop.y, hTop.z);
 
+  // ---------- Hardening: a wall around the whole city, with one gatehouse where the tunnel comes in ----------
+  const GAP = 4; // degrees either side of the gate
+  const wallTop = [];
+  for (let d = GAP; d < 360 - GAP - 0.01; d += 3) {
+    const span = Math.min(3, 360 - GAP - d);
+    const mid = d + span / 2;
+    const [x, z] = polar(mid, WALL_R);
+    box(1.4, 6.5, rad(span) * WALL_R + 0.06, x, 0, z, M.dark, city, { line: LINE_SOFT }).rotation.y = -rad(mid);
+    const [x1, z1] = polar(d, WALL_R);
+    const [x2, z2] = polar(d + span, WALL_R);
+    wallTop.push(x1, 6.6, z1, x2, 6.6, z2);
+  }
+  lines(wallTop, LINE);
+  for (let d = 30; d < 360; d += 30) {
+    const [x, z] = polar(d, WALL_R);
+    box(2.8, 10, 2.8, x, 0, z, M.mid, city, { line: LINE_SOFT }).rotation.y = -rad(d);
+    box(1, 0.5, 1, x, 10, z, M.glow, city, { edges: false, cast: false });
+  }
+  const gateHouse = district(0, WALL_R);
+  [-1, 1].forEach((side) => box(3.2, 12, 3.2, 0, 0, side * 8.9, M.mid, gateHouse, { line: LINE_SOFT }));
+  box(2.4, 1.6, 21, 0, 12, 0, M.dark, gateHouse);
+  const wallSign = texture((g, w, h) => {
+    g.fillStyle = '#e4e3de';
+    g.fillRect(0, 0, w, h);
+    g.fillStyle = '#1d1f21';
+    g.font = 'bold 46px monospace';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('HARDENED', w / 2, h / 2 + 2);
+  }, 512, 96);
+  [[-1.22, -Math.PI / 2], [1.22, Math.PI / 2]].forEach(([x, ry]) => {
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 1.25), new THREE.MeshBasicMaterial({ map: wallSign }));
+    sign.position.set(x, 12.8, 0);
+    sign.rotation.y = ry;
+    gateHouse.add(sign);
+  });
+  [-1, 1].forEach((side) => box(0.14, 11, 0.14, -1.7, 0.4, side * 7.2, M.glow, gateHouse, { edges: false, cast: false })); // the scanner bars
+  // patrol lights running along the top of the wall
+  const patrols = [0, 1, 2, 3].map((i) => ({ m: box(0.7, 0.45, 2, 0, 0, 0, M.glow, city, { edges: false, cast: false }), a: i * 90 + 20, dir: i % 2 ? 1 : -1 }));
+  animators.push((t, dt) => patrols.forEach((pt) => {
+    pt.a = (pt.a + pt.dir * dt * 6 + 360) % 360;
+    if (pt.a < GAP + 1 || pt.a > 359 - GAP) pt.dir *= -1; // turn back at the gate
+    const [x, z] = polar(pt.a, WALL_R);
+    pt.m.position.set(x, 6.85, z);
+    pt.m.rotation.y = -rad(pt.a);
+  }));
+  const fwTop = world(gateHouse, 0, 14.4, 0);
+  anchor('fw', 'HARDENED WALL', fwTop.x, fwTop.y, fwTop.z);
+
   // ---------- Camera shots, one per chapter ----------
   // target, then azimuth (degrees around the target), elevation (degrees) and distance
   const at = (deg, r, y) => { const [x, z] = polar(deg, r); return [x, y, z]; };
   const SHOTS = {
-    'ch-01': { target: [0, 0, 0], az: 58, el: 46, dist: 150, labels: ['gw', 'cf', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns', 'svc', 'stage'] },
-    'ch-02': { target: at(0, 40, 13), az: 38, el: 26, dist: 70, labels: ['inet', 'cf'] },
-    'ch-03': { target: at(26, 14, 4), az: 82, el: 32, dist: 50, labels: ['gw', 'dns'] },
-    'ch-04': { target: at(90, 25, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
-    'ch-05': { target: at(135, 27, 3), az: 170, el: 28, dist: 23, labels: ['mc'] },
-    'ch-06': { target: at(180, 27, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi', 'stage'] },
-    'ch-07': { target: at(225, 27, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
-    'ch-08': { target: at(315, 25, 6), az: 345, el: 26, dist: 32, labels: ['svc'] },
-    'ch-09': { target: at(270, 27, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
-    'ch-10': { target: at(160, 40, 5), az: 335, el: 18, dist: 40, labels: ['handheld', 'stage'] },
+    'ch-01': { target: at(0, 50, 0), az: 205, el: 40, dist: 340, labels: ['inet', 'cf', 'fw', 'gw', 'nas', 'mc', 'ledpanel', 'launch', 'desk', 'dns', 'svc', 'stage'] },
+    'ch-02': { target: at(0, 125, 20), az: 105, el: 14, dist: 195, labels: ['inet', 'cf', 'fw'] },
+    'ch-03': { target: at(30, 20, 4), az: 82, el: 32, dist: 64, labels: ['gw', 'dns'] },
+    'ch-04': { target: at(90, DR - 2, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
+    'ch-05': { target: at(135, DR, 3), az: 170, el: 28, dist: 23, labels: ['mc'] },
+    'ch-06': { target: at(180, DR, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi'] },
+    'ch-07': { target: at(225, DR, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
+    'ch-08': { target: at(315, WALL_R - 8, 6), az: 150, el: 30, dist: 60, labels: ['svc'] },
+    'ch-09': { target: at(270, DR, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
+    'ch-10': { target: at(162, 76, 5), az: 330, el: 24, dist: 48, labels: ['handheld', 'stage'] },
   };
   // keep filler buildings out of every close-up's line of sight
   const sightlines = Object.entries(SHOTS).filter(([id]) => id !== 'ch-01').map(([, s]) => {
@@ -1237,19 +1292,20 @@ function build() {
   const GREEN = std(0x3e4043); // parks and trees, in the same grays as everything else
   const sites = []; // landmarks the generator keeps clear of
   const keepClear = ([x, z], r) => sites.push([x, z, r]);
-  const STAGE_AT = [202, 49];
+  const STAGE_AT = [202, 80];
   keepClear(polar(...HANDHELD_AT), 10);
   keepClear(polar(...STAGE_AT), 12);
+  keepClear(polar(315, WALL_R - 10), 11);
   const blocked = (x, z) => DISTRICTS.some((d) => {
-    const [dx, dz] = polar(d, 27);
-    return Math.hypot(x - dx, z - dz) < 12.5;
+    const [dx, dz] = polar(d, DR);
+    return Math.hypot(x - dx, z - dz) < 13;
   }) || sites.some(([sx, sz, sr]) => Math.hypot(x - sx, z - sz) < sr) || sightlines.some((s) => segDist(x, z, s) < 7.5);
 
   // streets: three ground avenues and a cross street every 22.5 degrees
-  [[40.4, 42.6], [56.2, 58.4], [72, 74]].forEach(([r1, r2]) => ringRoad(r1, r2, 0.05));
+  [[64, 66], [92, 94]].forEach(([r1, r2]) => ringRoad(r1, r2, 0.05));
   for (let d = 0; d < 360; d += 22.5) {
-    const [x, z] = polar(d, 55.8);
-    box(36.4, 0.1, 1.8, x, 0, z, M.road, city, { line: LINE_SOFT, cast: false }).rotation.y = -rad(d);
+    const [x, z] = polar(d, (60.6 + WALL_R) / 2);
+    box(WALL_R - 60.6, 0.1, 1.8, x, 0, z, M.road, city, { line: LINE_SOFT, cast: false }).rotation.y = -rad(d);
   }
 
   // a lot is a group at its centre with local +x pointing away from the hub, so buildings face their street
@@ -1271,7 +1327,7 @@ function build() {
   const ARCH = {
     // a tower that steps back as it rises, with something on the roof
     tower(g, d, w, near) {
-      const h = (8 + rand() * 22) * (g.position.length() < 40 ? 0.45 : 1); // keep the inner ring low so the districts stay visible
+      const h = (8 + rand() * 22) * (g.position.length() < 34 ? 0.45 : 1); // keep the inner ring low so the districts stay visible
       const mat = towerMats[Math.floor(rand() * 3)];
       box(d, h * 0.62, w, 0, 0, 0, mat, g, { cast: near });
       box(d * 0.78, h * 0.28, w * 0.78, 0, h * 0.62, 0, mat, g, { cast: near });
@@ -1285,7 +1341,7 @@ function build() {
     // a round tower ringed with light bands
     round(g, d, w, near) {
       const r = Math.min(d, w) / 2.2;
-      const h = (10 + rand() * 18) * (g.position.length() < 40 ? 0.45 : 1);
+      const h = (10 + rand() * 18) * (g.position.length() < 34 ? 0.45 : 1);
       mesh(new THREE.CylinderGeometry(r, r * 1.05, h, 24), M.dark, 0, h / 2, 0, g, { cast: near, line: LINE_SOFT });
       for (let y = 3; y < h - 1; y += 3.2) mesh(new THREE.CylinderGeometry(r * 1.02, r * 1.02, 0.35, 24), M.light, 0, y, 0, g, { edges: false, cast: false });
       mesh(new THREE.CylinderGeometry(r * 0.6, r, 1.2, 24), ROOF, 0, h + 0.6, 0, g, { cast: false, line: LINE_SOFT });
@@ -1429,7 +1485,8 @@ function build() {
     315: ['fort', 'fort', 'tower', 'datacenter'],
   };
   const plinths = [];
-  [[16, 33.4, 1], [43.4, 55.6, 2], [59.2, 71.2, 2], [76, 92, 2]].forEach(([r1, r2, nr]) => {
+  // a low inner ring, then the outer neighbourhoods; the space round the services stays open so each district reads on its own
+  [[16, 30, 1], [67.4, 90.6, 2], [95.4, 101.6, 1]].forEach(([r1, r2, nr]) => {
     for (let sector = 0; sector < 16; sector += 1) {
       const rm = (r1 + r2) / 2;
       const margin = (1.7 / rm) * (180 / Math.PI);
@@ -1441,11 +1498,11 @@ function build() {
           const rc = r1 + (i + 0.5) * ((r2 - r1) / nr);
           const ac = a0 + (j + 0.5) * (span / nt);
           const [x, z] = polar(ac, rc);
-          if (blocked(x, z)) continue;
+          if (blocked(x, z) || rand() < 0.3) continue; // some lots stay empty
           const depth = (r2 - r1) / nr - 1.4;
           const width = (rad(span / nt) * rc) - 1.4;
           plinths.push([x, z, ac, depth + 1, width + 1]);
-          const near = rc < 58;
+          const near = rc < 60;
           const theme = THEMES[(Math.round(ac / 45) * 45) % 360];
           const kind = theme[Math.floor(rand() * theme.length)];
           ARCH[kind](lot(x, z, ac), Math.min(depth, 9), Math.min(width, 10), near);
@@ -1608,7 +1665,7 @@ function build() {
     }
   }, 64, 64);
   const foilMat = std(0xffffff, { map: foilTex, metalness: 0.15, roughness: 0.45, emissive: 0x2a2a28 });
-  const sats = [[78, 44, 0.35, 0.05], [96, 54, -0.28, -0.035], [66, 38, 0.12, 0.07]].map(([r, y, tilt, speed], i) => {
+  const sats = [[132, 66, 0.35, 0.05], [152, 78, -0.28, -0.035], [118, 58, 0.12, 0.07]].map(([r, y, tilt, speed], i) => {
     const orbit = new THREE.Group();
     orbit.position.y = y;
     orbit.rotation.set(tilt, i * 1.7, tilt * 0.5);
@@ -1646,7 +1703,7 @@ function build() {
   }));
 
   // ---------- An elevated train looping the middle avenue ----------
-  const RAIL_R = 57.3;
+  const RAIL_R = 93;
   const RAIL_Y = 6.4;
   const railBed = new THREE.Mesh(new THREE.RingGeometry(RAIL_R - 0.6, RAIL_R + 0.6, 160), M.dark);
   railBed.rotation.x = -Math.PI / 2;
@@ -1675,7 +1732,7 @@ function build() {
 
   // ---------- People on the sidewalks ----------
   const walkers = Array.from({ length: 160 }, (_, i) => ({
-    r: [39.9, 43.1, 55.7, 58.9][i % 4] + (rand() - 0.5) * 0.4,
+    r: [63.4, 66.6, 91.4, 94.6][i % 4] + (rand() - 0.5) * 0.4,
     a: rand() * Math.PI * 2,
     speed: (rand() < 0.5 ? -1 : 1) * (0.006 + rand() * 0.006),
     phase: rand() * 6,
@@ -1729,7 +1786,7 @@ function build() {
   let rollStart = -10;
   animators.push((t) => {
     const a = t * 0.05;
-    plane.position.set(Math.cos(a) * 78, 40 + Math.sin(t * 0.3) * 1.5, Math.sin(a) * 78);
+    plane.position.set(Math.cos(a) * 135, 62 + Math.sin(t * 0.3) * 1.5, Math.sin(a) * 135);
     // banking into the turn, and a barrel roll whenever someone toggles RGB mode
     const rgb = root.classList.contains('rgb');
     if (rgb !== planeRgb) { planeRgb = rgb; rollStart = t; }
@@ -1753,13 +1810,15 @@ function build() {
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
   const gwPort = V(0, 2.8, 0);
   const cfPort = world(gate, -0.9, 7.6, 0);
-  const inetC = V(ix, 27, iz);
-  link(inetC.clone().add(cfPort.clone().sub(inetC).setLength(6.2)), cfPort, 2, 0.2, 6); // visitors reach Cloudflare first
-  link(cfPort, gwPort, 4, 0.2, 6); // the tunnel: Cloudflare to the gateway
+  const inetC = V(ix, IY, iz);
+  const wallGate = world(gateHouse, 0, 13.6, 0);
+  link(inetC.clone().add(cfPort.clone().sub(inetC).setLength(6.2 * IS)), cfPort, 4, 0.2, 6); // visitors reach Cloudflare first
+  link(cfPort, wallGate, 3, 0.2, 4); // the tunnel comes in through the hardened gate
+  link(wallGate, gwPort, 8, 0.2, 8); // and on to the gateway
   [world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, -2), world(mc, -5, 2, 0), ledPi, world(lab, -1.5, 3.5, 0),
     world(lab, 2.5, 1.5, -11), world(helpers, -1.5, 4, 0), dnsTop].forEach((p) => link(gwPort, p, 5));
   link(cfPort, world(plaza, -1.5, 5, 0), 12, 0.1, 3); // the Launcher lives at Cloudflare, not at home
-  link(dnsTop, inetC.clone().add(dnsTop.clone().sub(inetC).setLength(6.2)), 6, 0.1, 3); // the DNS Pi resolves straight from the root servers
+  link(dnsTop, inetC.clone().add(dnsTop.clone().sub(inetC).setLength(6.2 * IS)), 6, 0.1, 3); // the DNS Pi resolves straight from the root servers
   // inside the media district: Seerr <-> Jellyfin, Seerr -> the *arr containers -> the NAS -> Jellyfin
   link(world(media, -3, 1.9, 8.4), world(media, -4.4, 4.2, 4), 2);
   link(world(media, -3, 1.9, 8.4), world(media, 2, 10.6, 5.5), 2);
@@ -1781,9 +1840,9 @@ function build() {
   // ---------- Traffic: packets on the rings and the radial roads ----------
   const cars = [];
   for (let i = 0; i < 36; i += 1) cars.push({ kind: 'ring', r: i % 2 ? 8.9 : 9.7, y: 0.4, dir: i % 2 ? 1 : -1, t: rand() * Math.PI * 2, speed: 0.22 + rand() * 0.08 });
-  for (let i = 0; i < 60; i += 1) cars.push({ kind: 'ring', r: i % 2 ? 35.7 : 36.9, y: HIGH + 0.35, dir: i % 2 ? 1 : -1, t: rand() * Math.PI * 2, speed: 0.06 + rand() * 0.03 });
+  for (let i = 0; i < 60; i += 1) cars.push({ kind: 'ring', r: i % 2 ? 58.7 : 59.9, y: HIGH + 0.35, dir: i % 2 ? 1 : -1, t: rand() * Math.PI * 2, speed: 0.06 + rand() * 0.03 });
   // the ground avenues get their own traffic
-  [[41, 42], [56.8, 57.8], [72.5, 73.5]].forEach(([r1, r2]) => {
+  [[64.6, 65.4], [92.6, 93.4]].forEach(([r1, r2]) => {
     for (let i = 0; i < 26; i += 1) cars.push({ kind: 'ring', r: i % 2 ? r1 : r2, y: 0.4, dir: i % 2 ? 1 : -1, t: rand() * Math.PI * 2, speed: 0.025 + rand() * 0.02 });
   });
   DISTRICTS.forEach((deg) => {
@@ -1800,7 +1859,7 @@ function build() {
         tmp.rotation.set(0, -c.t - Math.PI / 2, 0);
       } else {
         c.t = (c.t + c.speed * dt * c.dir + 1) % 1;
-        const s = 11 + c.t * 23;
+        const s = 11 + c.t * (DR - 2);
         const a = rad(c.deg);
         tmp.position.set(Math.cos(a) * s - Math.sin(a) * c.lane, 0.4, Math.sin(a) * s + Math.cos(a) * c.lane);
         tmp.rotation.set(0, -a, 0);
@@ -1813,7 +1872,7 @@ function build() {
   moveCars(0);
 
   // ---------- Camera ----------
-  const cam = { target: new THREE.Vector3(...SHOTS['ch-01'].target), az: 58, el: 46, dist: 150 };
+  const cam = { target: new THREE.Vector3(...SHOTS['ch-01'].target), az: 205, el: 40, dist: 340 };
   let from = { ...cam, target: cam.target.clone() };
   let to = SHOTS['ch-01'];
   let flyStart = -10;
