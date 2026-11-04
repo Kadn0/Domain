@@ -161,6 +161,11 @@ function build() {
   };
   const towerGrids = [[4, 10, 0.3], [6, 14, 0.18], [3, 8, 0.4]];
   const towerMats = towerGrids.map(([c, r, lit]) => std(0xffffff, { map: texture(windows(c, r, lit)) }));
+  // the city keeps the visitor's hours: more windows lit when it's evening where they are
+  const litChance = () => {
+    const h = new Date().getHours();
+    return h >= 19 || h < 6 ? 0.5 : h >= 17 ? 0.38 : 0.22;
+  };
   // someone is always switching a light on or off somewhere in the city
   function twinkle() {
     const n = Math.floor(rand() * towerMats.length);
@@ -170,7 +175,7 @@ function build() {
     const cw = tex.image.width / cols;
     const rh = tex.image.height / rows;
     for (let i = 0; i < 3; i += 1) {
-      g.fillStyle = rand() < 0.35 ? '#dcdbd6' : '#3a3d41';
+      g.fillStyle = rand() < litChance() ? '#dcdbd6' : '#3a3d41';
       g.fillRect(Math.floor(rand() * cols) * cw + cw * 0.22, Math.floor(rand() * rows) * rh + rh * 0.28, cw * 0.56, rh * 0.36);
     }
     tex.needsUpdate = true;
@@ -494,6 +499,51 @@ function build() {
   screen.position.set(-4.27, 7.2, 0);
   screen.rotation.y = -Math.PI / 2;
   media.add(screen);
+
+  // The real thing on the Jellyfin screen: YouTube's own player laid over the 3D screen with CSS3D.
+  // It sits above the WebGL canvas, so it only shows in the Media chapter, where nothing stands in front of it.
+  const TV_VIDEO = '9v0tJsY61HU';
+  const tv = { ready: false, on: false, unmuted: false };
+  if (THREE.CSS3DRenderer && THREE.CSS3DObject) {
+    tv.renderer = new THREE.CSS3DRenderer();
+    tv.renderer.domElement.id = 'tv';
+    canvas.after(tv.renderer.domElement);
+    tv.scene = new THREE.Scene();
+    tv.frame = document.createElement('div');
+    tv.frame.className = 'tv-frame';
+    tv.object = new THREE.CSS3DObject(tv.frame);
+    screen.updateMatrixWorld(true);
+    screen.getWorldPosition(tv.object.position);
+    screen.getWorldQuaternion(tv.object.quaternion);
+    tv.object.scale.setScalar(0.01); // the frame is 992×592 CSS pixels: the 9.8×5.8 screen plus a hair, so no cartoon peeks out at the edges
+    tv.scene.add(tv.object);
+    tv.button = document.createElement('button');
+    tv.button.type = 'button';
+    tv.button.className = 'tv-sound';
+    tv.button.textContent = 'Sound off';
+    tv.button.setAttribute('aria-pressed', 'false');
+    labelLayer.after(tv.button);
+    const command = (func) => tv.iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
+    tv.setSound = (on) => {
+      tv.unmuted = on;
+      command(on ? 'unMute' : 'mute');
+      if (on) command('playVideo');
+      tv.button.textContent = on ? 'Sound on' : 'Sound off';
+      tv.button.setAttribute('aria-pressed', String(on));
+    };
+    tv.button.addEventListener('click', () => tv.setSound(!tv.unmuted));
+    tv.load = () => {
+      if (tv.ready) return;
+      tv.ready = true;
+      tv.iframe = document.createElement('iframe');
+      tv.iframe.src = `https://www.youtube-nocookie.com/embed/${TV_VIDEO}?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&enablejsapi=1`;
+      tv.iframe.title = 'Now playing on the Jellyfin screen';
+      tv.iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+      tv.iframe.tabIndex = -1;
+      tv.frame.appendChild(tv.iframe);
+    };
+  }
+  const tvCorner = world(media, -4.4, 4.4, -4.6);
   box(1.3, 1.8, 1.1, -3, 0, 8.4, M.mid, media);
   box(0.9, 0.12, 0.06, -3.66, 1.3, 8.4, M.glow, media, { edges: false, cast: false }).rotation.y = Math.PI / 2;
   let nasClock = 0;
@@ -652,6 +702,86 @@ function build() {
   anchor('desk', 'LLM SCANNER', deskTop.x, deskTop.y, deskTop.z);
   const radioTop = world(lab, 2, 12.4, -8);
   anchor('radio', 'RADIO PI', radioTop.x, radioTop.y, radioTop.z);
+  // a 3D printer on its own stand: the head sweeps back and forth while the print grows a layer at a time
+  box(3.6, 2.6, 3.6, -3.2, 0, -5.6, M.dark, lab);
+  const pFrame = [];
+  [[-1.6, -1.6], [1.6, -1.6], [1.6, 1.6], [-1.6, 1.6]].forEach(([x, z]) => pFrame.push(-3.2 + x, 2.6, -5.6 + z, -3.2 + x, 6.4, -5.6 + z));
+  pFrame.push(-4.8, 6.4, -7.2, -1.6, 6.4, -7.2, -4.8, 6.4, -4, -1.6, 6.4, -4, -4.8, 6.4, -7.2, -4.8, 6.4, -4, -1.6, 6.4, -7.2, -1.6, 6.4, -4);
+  lines(pFrame, LINE, lab);
+  box(3, 0.12, 3, -3.2, 2.6, -5.6, M.mid, lab, { line: LINE_SOFT });
+  const gantry = box(0.2, 0.2, 3.2, -3.2, 4.5, -5.6, M.light, lab, { cast: false });
+  const head = box(0.6, 0.6, 0.6, -3.2, 4.3, -5.6, M.light, lab, { cast: false });
+  const printGeo = new THREE.CylinderGeometry(0.7, 0.9, 1, 6);
+  printGeo.translate(0, 0.5, 0);
+  const print = mesh(printGeo, M.glow, -3.2, 2.72, -5.6, lab, { line: LINE_SOFT });
+  animators.push((t) => {
+    const layer = (t * 0.08) % 1;
+    print.scale.set(1, 0.02 + layer * 1.4, 1);
+    const top = 2.72 + (0.02 + layer * 1.4);
+    gantry.position.y = head.position.y = top + 0.35;
+    head.position.x = -3.2 + Math.sin(t * 6) * 0.7;
+    head.position.z = -5.6 + Math.cos(t * 4.3) * 0.7;
+    gantry.position.x = head.position.x;
+  });
+  const printerTop = world(lab, -3.2, 6.9, -5.6);
+  anchor('printer', '3D PRINTER', printerTop.x, printerTop.y, printerTop.z);
+
+  // ---------- 10 Off the clock: a giant retro handheld playing snake at the edge of town ----------
+  const HANDHELD_AT = [160, 45];
+  const arcade = district(...HANDHELD_AT);
+  const handheld = new THREE.Group();
+  handheld.position.set(0, 0, 0);
+  handheld.rotation.z = 0.12; // leaning back a little, like it's propped up
+  arcade.add(handheld);
+  box(3.2, 1, 9, 1.2, 0, 0, M.mid, arcade);
+  box(1.6, 7.2, 13, 0, 0.6, 0, M.light, handheld);
+  box(0.2, 5, 6.6, -0.82, 1.7, 0, M.dark, handheld, { cast: false });
+  const lcd = texture(() => {}, 96, 64);
+  const lcdFace = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), new THREE.MeshBasicMaterial({ map: lcd }));
+  lcd.magFilter = THREE.NearestFilter;
+  lcdFace.position.set(-0.93, 4.2, 0);
+  lcdFace.rotation.y = -Math.PI / 2;
+  handheld.add(lcdFace);
+  box(0.2, 0.7, 2.2, -0.85, 3.7, -4.9, M.dark, handheld, { cast: false });
+  box(0.2, 2.2, 0.7, -0.85, 2.95, -4.9, M.dark, handheld, { cast: false });
+  [[3.8, 4.6], [4.6, 5.4]].forEach(([y, z]) => {
+    const b = mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 16), M.dark, -0.85, y, z, handheld, { cast: false });
+    b.rotation.z = Math.PI / 2;
+  });
+  [-0.9, 0.9].forEach((z) => box(0.15, 0.25, 1.2, -0.84, 1.3, z, M.dark, handheld, { edges: false, cast: false }));
+  // snake that chases its food around the little screen
+  const snake = { body: [[6, 8], [5, 8], [4, 8]], food: [16, 5] };
+  function drawLcd() {
+    const g = lcd.image.getContext('2d');
+    g.fillStyle = '#c3c8b8';
+    g.fillRect(0, 0, 96, 64);
+    g.fillStyle = '#2b2e27';
+    snake.body.forEach(([x, y]) => g.fillRect(x * 4, y * 4, 3, 3));
+    g.fillRect(snake.food[0] * 4 + 1, snake.food[1] * 4 + 1, 2, 2);
+    g.fillRect(0, 0, 96, 1);
+    g.fillRect(0, 63, 96, 1);
+    lcd.needsUpdate = true;
+  }
+  function stepSnake() {
+    const [hx, hy] = snake.body[0];
+    const [fx, fy] = snake.food;
+    const next = hx !== fx ? [hx + Math.sign(fx - hx), hy] : [hx, hy + Math.sign(fy - hy)];
+    snake.body.unshift(next);
+    if (next[0] === fx && next[1] === fy) {
+      snake.food = [1 + Math.floor(Math.random() * 22), 1 + Math.floor(Math.random() * 14)];
+      if (snake.body.length > 24) snake.body.length = 3;
+    } else snake.body.pop();
+    drawLcd();
+  }
+  drawLcd();
+  let snakeClock = 0;
+  animators.push((t) => {
+    if (t - snakeClock < 0.14) return;
+    snakeClock = t;
+    stepSnake();
+  });
+  const hhTop = world(arcade, 0, 9.4, 0);
+  anchor('handheld', 'RETRO HANDHELD', hhTop.x, hhTop.y, hhTop.z);
 
   // ---------- 08 Services: the Launcher plaza ----------
   const plaza = district(270, 27);
@@ -726,9 +856,10 @@ function build() {
     'ch-04': { target: at(90, 25, 6), az: 238, el: 16, dist: 30, labels: ['nas', 'media', 'jelly', 'seerr'] },
     'ch-05': { target: at(135, 27, 3), az: 170, el: 32, dist: 30, labels: ['mc'] },
     'ch-06': { target: at(180, 27, 11), az: 20, el: 10, dist: 34, labels: ['ledpanel', 'ledpi'] },
-    'ch-07': { target: at(225, 27, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio'] },
+    'ch-07': { target: at(225, 27, 4), az: 72, el: 28, dist: 30, labels: ['desk', 'radio', 'printer'] },
     'ch-08': { target: at(315, 25, 6), az: 345, el: 26, dist: 32, labels: ['svc'] },
     'ch-09': { target: at(270, 27, 5), az: 300, el: 34, dist: 40, labels: ['launch'] },
+    'ch-10': { target: at(160, 40, 5), az: 335, el: 18, dist: 40, labels: ['handheld'] },
   };
   // keep filler buildings out of every close-up's line of sight
   const sightlines = Object.entries(SHOTS).filter(([id]) => id !== 'ch-01').map(([, s]) => {
@@ -749,7 +880,7 @@ function build() {
   const nearDistrict = (x, z) => DISTRICTS.some((d) => {
     const [dx, dz] = polar(d, 27);
     return Math.hypot(x - dx, z - dz) < 12.5;
-  }) || sightlines.some((s) => segDist(x, z, s) < 8);
+  }) || Math.hypot(x - polar(...HANDHELD_AT)[0], z - polar(...HANDHELD_AT)[1]) < 10 || sightlines.some((s) => segDist(x, z, s) < 8);
   const onRoad = (r, deg) => DISTRICTS.some((d) => {
     let diff = Math.abs(((deg - d + 540) % 360) - 180);
     diff = rad(diff) * r;
@@ -757,7 +888,7 @@ function build() {
   });
   let placed = 0;
   for (let n = 0; n < 900 && placed < 170; n += 1) {
-    const r = 13 + rand() ** 0.8 * 56;
+    const r = 16 + rand() ** 0.8 * 53;
     const deg = rand() * 360;
     if ((r > 33.5 && r < 39.5) || onRoad(r, deg)) continue;
     const [x, z] = polar(deg, r);
@@ -814,10 +945,16 @@ function build() {
   const navGreen = box(0.25, 0.25, 0.25, 0.2, 0, 3.3, new THREE.MeshBasicMaterial({ color: 0x4dff88 }), plane, { edges: false, cast: false });
   const strobe = box(0.3, 0.3, 0.3, -2.6, 1.3, 0, M.glow, plane, { edges: false, cast: false });
   scene.add(plane);
+  let planeRgb = false;
+  let rollStart = -10;
   animators.push((t) => {
     const a = t * 0.05;
     plane.position.set(Math.cos(a) * 78, 40 + Math.sin(t * 0.3) * 1.5, Math.sin(a) * 78);
-    plane.rotation.set(0.12, -a - Math.PI / 2, 0); // banking into the turn
+    // banking into the turn, and a barrel roll whenever someone toggles RGB mode
+    const rgb = root.classList.contains('rgb');
+    if (rgb !== planeRgb) { planeRgb = rgb; rollStart = t; }
+    const roll = Math.min(1, (t - rollStart) / 2.2);
+    plane.rotation.set(0.12 + (roll < 1 ? roll * Math.PI * 2 : 0), -a - Math.PI / 2, 0);
     strobe.visible = (t % 1.4) < 0.08;
     navRed.visible = navGreen.visible = (t % 1) < 0.7;
   });
@@ -874,12 +1011,14 @@ function build() {
     const w = window.innerWidth;
     const h = window.innerHeight;
     renderer.setSize(w, h, false);
+    tv.renderer?.setSize(w, h);
     camera.aspect = w / h;
     // push the picture away from the reading panel: right on wide screens, up on narrow ones
-    if (w >= 1180) camera.setViewOffset(w, h, -Math.min(330, w * 0.22), 0, w, h);
-    else if (w >= 900) camera.setViewOffset(w, h, -w * 0.16, 0, w, h);
-    else camera.setViewOffset(w, h, 0, h * 0.2, w, h);
+    const [ox, oy] = w >= 1180 ? [-Math.min(330, w * 0.22), 0] : w >= 900 ? [-w * 0.16, 0] : [0, h * 0.2];
+    camera.setViewOffset(w, h, ox, oy, w, h);
     camera.updateProjectionMatrix();
+    // CSS3DRenderer ignores the view offset, so shift its layer by hand to keep the video on the screen
+    if (tv.renderer) tv.renderer.domElement.style.transform = `translate(${-ox}px, ${-oy}px)`;
   }
   window.addEventListener('resize', resize);
   resize();
@@ -941,6 +1080,22 @@ function build() {
 
     const w = window.innerWidth;
     const h = window.innerHeight;
+
+    // the live screen: shown once the camera has settled on the Media chapter, muted again when it leaves
+    if (tv.renderer) {
+      const tvOn = chapter === 'ch-04' && k > 0.97 && root.classList.contains('in-chapters');
+      if (tvOn !== tv.on) {
+        tv.on = tvOn;
+        root.classList.toggle('tv-on', tvOn);
+        if (tvOn) tv.load();
+        else if (tv.unmuted) tv.setSound(false);
+      }
+      if (tvOn) {
+        tv.renderer.render(tv.scene, camera);
+        v.copy(tvCorner).project(camera);
+        tv.button.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px)`;
+      }
+    }
     Object.entries(tags).forEach(([key, el]) => {
       if (!shown.includes(key) || k < 0.85) {
         el.classList.remove('on');

@@ -448,7 +448,7 @@ if (labState && nasChip) {
 // ---------- Ping ----------
 let pings = 0;
 let pingTimer = 0;
-$('nas-status').addEventListener('click', () => {
+$('nas-status')?.addEventListener('click', () => {
   pings += 1;
   window.clearTimeout(pingTimer);
   pingTimer = window.setTimeout(() => { pings = 0; }, 2000);
@@ -460,7 +460,7 @@ $('nas-status').addEventListener('click', () => {
 });
 
 // ---------- Honeypot ----------
-$('adminLink').addEventListener('click', () => {
+$('adminLink')?.addEventListener('click', () => {
   openModal(`<h3>Admin panel</h3>
     <form id="honey" style="display:grid;gap:12px">
       <label>Username<input name="u" autocomplete="off" spellcheck="false"></label>
@@ -481,8 +481,8 @@ $('adminLink').addEventListener('click', () => {
 // ---------- Visitor counter ----------
 const visits = store.get('kd-visits', 0) + 1;
 store.set('kd-visits', visits);
-$('digits').textContent = String(4810 + visits).padStart(6, '0');
-$('counter').addEventListener('click', () => toast('You are a very important visitor.'));
+if ($('digits')) $('digits').textContent = String(4810 + visits).padStart(6, '0');
+$('counter')?.addEventListener('click', () => toast('You are a very important visitor.'));
 
 // ---------- Idle screensaver ----------
 const saver = $('saver');
@@ -608,3 +608,15 @@ resetIdle();
 })();
 
 paintEggs();
+
+// a hello for anyone who opens the developer tools
+console.log(
+  [
+    '%cKADENTS%c',
+    "Hi, I'm Kaden. Poking around under the hood? Good instinct.",
+    'The code is public: https://github.com/Kadn0/Domain',
+    'There are 13 eggs on this page. The console will not give you any of them.',
+  ].join('\n'),
+  'font: 300 28px "Hanken Grotesk", sans-serif; letter-spacing: -0.02em;',
+  'font: 12px "Martian Mono", monospace; line-height: 1.6;'
+);
