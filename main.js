@@ -8,7 +8,7 @@ const STATUS_ICON = {
   warning: '!',
 };
 
-const MINECRAFT_HOST = 'serber.kadents.com';
+const MINECRAFT_HOST = 'mc.kadents.com';
 // Optional: set this to a deployed proxy URL (Cloudflare Worker, Vercel function, etc.)
 // Example: const PROXY_URL = 'https://your-worker.example.workers.dev';
 const PROXY_URL = null;

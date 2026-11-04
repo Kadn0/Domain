@@ -646,7 +646,7 @@ function build() {
     tv.button.textContent = 'Sound off';
     tv.button.setAttribute('aria-pressed', 'false');
     labelLayer.after(tv.button);
-    const command = (func) => tv.iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), '*');
+    const command = (func) => tv.iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), 'https://www.youtube-nocookie.com');
     tv.setSound = (on) => {
       tv.unmuted = on;
       command(on ? 'unMute' : 'mute');
