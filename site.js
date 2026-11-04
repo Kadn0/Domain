@@ -94,7 +94,7 @@ modal.addEventListener('click', (event) => {
   }
 });
 
-eggBtn.addEventListener('click', () => {
+const openEggs = () => {
   const items = Object.entries(EGGS)
     .map(([key, [name, done, hint]]) =>
       found.has(key)
@@ -106,28 +106,55 @@ eggBtn.addEventListener('click', () => {
     <p class="mono">On a phone? Triple-tap the KADENTS title to type words.</p>
     <ul class="eggs">${items}</ul>
     <div class="card-actions"><button class="btn ghost" type="button" data-reset>Clear log</button><button class="btn primary" type="button" data-close>Close</button></div>`);
-});
+};
+document.querySelectorAll('#eggBtn, [data-eggs]').forEach((button) => button.addEventListener('click', openEggs));
 
 // ---------- Reading versions ----------
 const MODES = ['eli5', 'tech', 'comm'];
+const versMark = document.querySelector('#rail .vers-mark');
+
+function placeVersMark() {
+  const on = document.querySelector('#rail .vers button[aria-pressed="true"]');
+  if (!versMark || !on) return;
+  versMark.style.left = `${on.offsetLeft}px`;
+  versMark.style.width = `${on.offsetWidth}px`;
+}
+
 function setMode(mode) {
   root.dataset.mode = mode;
-  document.querySelectorAll('[data-mode-btn]').forEach((button) => {
+  document.querySelectorAll('[data-mode-btn]:not([data-start])').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.modeBtn === mode));
   });
+  placeVersMark();
   store.set('kd-mode', mode);
 }
+
+function goTo(id) {
+  const target = $(id);
+  if (target) target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
+}
+
 document.querySelectorAll('[data-mode-btn]').forEach((button) => {
-  button.addEventListener('click', () => setMode(button.dataset.modeBtn));
+  button.addEventListener('click', () => {
+    setMode(button.dataset.modeBtn);
+    if (button.hasAttribute('data-start')) goTo('ch-01');
+  });
 });
 const savedMode = store.get('kd-mode', 'eli5');
 setMode(MODES.includes(savedMode) ? savedMode : 'eli5');
+document.fonts?.ready.then(placeVersMark);
+window.addEventListener('resize', placeVersMark);
 
-// ---------- Map ----------
+document.querySelectorAll('#rail button[data-go]').forEach((button) => {
+  button.addEventListener('click', () => goTo(button.dataset.go));
+});
+
+// ---------- Landing map ----------
+const map = $('map');
 const caption = $('schemCap');
 const defaultCaption = caption.textContent;
-document.querySelectorAll('.schematic .wires path, .schematic .node').forEach((el, i) => el.style.setProperty('--i', i));
-document.querySelectorAll('.schematic .node').forEach((node) => {
+map.querySelectorAll('.wires path, .node').forEach((el, i) => el.style.setProperty('--i', i));
+map.querySelectorAll('.node').forEach((node) => {
   node.setAttribute('tabindex', '0');
   node.setAttribute('role', node.dataset.egg ? 'button' : 'link');
   node.setAttribute('aria-label', node.dataset.label);
@@ -139,8 +166,7 @@ document.querySelectorAll('.schematic .node').forEach((node) => {
       egg('rogue');
       return;
     }
-    const target = $(node.dataset.go);
-    if (target) target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+    goTo(node.dataset.go);
   };
   node.addEventListener('pointerenter', show);
   node.addEventListener('pointerleave', hide);
@@ -155,18 +181,105 @@ document.querySelectorAll('.schematic .node').forEach((node) => {
   });
 });
 
-// ---------- Loader (once per browser session) ----------
+// ---------- Scene: the map, big and fixed, framing whatever the current chapter is about ----------
+const scene = $('scene');
+const sceneMap = map.cloneNode(true);
+sceneMap.querySelector('title')?.remove();
+scene.setAttribute('viewBox', map.getAttribute('viewBox'));
+scene.append(...sceneMap.childNodes);
+scene.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+scene.querySelectorAll('.node').forEach((node) => node.removeAttribute('tabindex'));
+
+const stages = [...document.querySelectorAll('.stage[data-focus]')];
+const railButtons = [...document.querySelectorAll('#index button[data-go]')];
+const idxMark = document.querySelector('#rail .idx-mark');
+let view = stages[0].dataset.focus.split(' ').map(Number);
+let viewFrom = view;
+let viewTo = view;
+let viewStart = 0;
+let viewFrame = 0;
+let current;
+
+function applyView(box) {
+  scene.setAttribute('viewBox', box.join(' '));
+  const scale = Math.min(scene.clientWidth / box[2], scene.clientHeight / box[3]) || 1;
+  scene.style.setProperty('--fs', `${11 / scale}px`); // labels stay about 11px on screen at any zoom
+}
+
+function tweenView(now) {
+  const t = reduced ? 1 : Math.min(1, (now - viewStart) / 900);
+  const e = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+  view = viewFrom.map((v, i) => v + (viewTo[i] - v) * e);
+  applyView(view);
+  if (t < 1) viewFrame = window.requestAnimationFrame(tweenView);
+}
+
+function placeIdxMark() {
+  const on = railButtons.find((button) => button.hasAttribute('aria-current'));
+  if (!idxMark || !on) return;
+  idxMark.style.opacity = '1';
+  idxMark.style.transform = `translateY(${on.offsetTop + (on.offsetHeight - 8) / 2}px)`;
+}
+
+function enterStage(stage) {
+  if (stage === current) return;
+  current = stage;
+  root.classList.toggle('in-chapters', Boolean(stage));
+  if (!stage) return;
+  root.dataset.chapter = stage.id; // city.js flies the 3D camera to this chapter
+
+  window.cancelAnimationFrame(viewFrame);
+  viewFrom = view;
+  viewTo = stage.dataset.focus.split(' ').map(Number);
+  viewStart = performance.now();
+  viewFrame = window.requestAnimationFrame(tweenView);
+
+  const lit = stage.dataset.lit.split(' ');
+  const all = lit.includes('all');
+  scene.querySelectorAll('.node').forEach((node) => node.classList.toggle('lit', all || lit.includes(node.dataset.id)));
+  scene.querySelectorAll('.labels text').forEach((text) => text.classList.toggle('lit', !all && lit.includes(text.dataset.for)));
+  scene.querySelector('.wires').classList.toggle('lit', all);
+
+  railButtons.forEach((button) => button.dataset.go === stage.id ? button.setAttribute("aria-current", "step") : button.removeAttribute("aria-current"));
+  placeIdxMark();
+}
+
+let scrollQueued = false;
+function onScroll() {
+  if (scrollQueued) return;
+  scrollQueued = true;
+  window.requestAnimationFrame(() => {
+    scrollQueued = false;
+    const line = window.innerHeight * 0.6;
+    let next = null;
+    stages.forEach((stage) => {
+      if (stage.getBoundingClientRect().top < line) next = stage;
+    });
+    enterStage(next);
+  });
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', () => {
+  applyView(view);
+  placeIdxMark();
+});
+applyView(view);
+onScroll();
+
+// ---------- Loader (once per browser session): the rule over the title fills, and sticks at 99% ----------
 (function loader() {
   if (store.get('kd-loaded', false, 'sessionStorage')) return;
   store.set('kd-loaded', true, 'sessionStorage');
-  const el = $('loader');
+  root.classList.add('loading');
+  const bar = $('loaderBar');
   const fill = $('loaderFill');
   const pct = $('loaderPct');
   let value = 0;
   let stalled = false;
   let done = false;
   let stallTimer = 0;
-  el.hidden = false;
+  bar.tabIndex = 0;
+  bar.removeAttribute('aria-hidden');
 
   const set = (v) => {
     value = v;
@@ -178,7 +291,9 @@ document.querySelectorAll('.schematic .node').forEach((node) => {
     done = true;
     window.clearTimeout(stallTimer);
     set(100);
-    window.setTimeout(() => { el.hidden = true; }, 200);
+    bar.tabIndex = -1;
+    bar.setAttribute('aria-hidden', 'true');
+    window.setTimeout(() => root.classList.remove('loading'), 150);
   };
   const tick = () => {
     if (done) return;
@@ -193,14 +308,12 @@ document.querySelectorAll('.schematic .node').forEach((node) => {
   };
   tick();
 
-  $('loaderBar').addEventListener('click', (event) => {
-    event.stopPropagation();
+  bar.addEventListener('click', () => {
     if (stalled && !done) {
       egg('loading');
       finish();
     }
   });
-  el.addEventListener('click', finish);
 })();
 
 // ---------- Words and keys ----------
@@ -225,11 +338,13 @@ const WORDS = {
   creeper() {
     toast('Ssssss...');
     window.setTimeout(() => {
-      [$('ch-05'), $('mcNode')].forEach((el) => {
+      [$('ch-05'), ...document.querySelectorAll('[data-id="mc"]')].forEach((el) => {
         el.classList.remove('boom');
         void el.getBoundingClientRect();
         el.classList.add('boom');
       });
+      root.classList.add('boom-mc');
+      window.setTimeout(() => root.classList.remove('boom-mc'), 1500);
       toast('Aww man.');
       egg('creeper');
     }, 1200);
@@ -264,7 +379,7 @@ function checkWords(text) {
 }
 
 $('dog').addEventListener('animationend', () => { $('dog').hidden = true; });
-document.querySelectorAll('#ch-05, #mcNode').forEach((el) => el.addEventListener('animationend', () => el.classList.remove('boom')));
+document.querySelectorAll('#ch-05, [data-id="mc"]').forEach((el) => el.addEventListener('animationend', () => el.classList.remove('boom')));
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !modal.hidden) {
@@ -389,6 +504,7 @@ resetIdle();
 // ---------- LED matrix ----------
 (function led() {
   const canvas = $('led');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const off = document.createElement('canvas');
   off.width = 64;
