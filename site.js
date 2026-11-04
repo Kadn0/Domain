@@ -156,7 +156,7 @@ setMode(MODES.includes(savedMode) ? savedMode : 'eli5');
 document.fonts?.ready.then(placeVersMark);
 window.addEventListener('resize', placeVersMark);
 
-document.querySelectorAll('#rail button[data-go]').forEach((button) => {
+document.querySelectorAll('#rail button[data-go], .quick button[data-go]').forEach((button) => {
   button.addEventListener('click', () => goTo(button.dataset.go));
 });
 
