@@ -3,56 +3,49 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>TV · Kadents</title>
-  <meta name="description" content="Every show I've watched, rated." />
+  <title>TV map · Kadents</title>
+  <meta name="description" content="A map of shows, where similar shows sit next to each other." />
   <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/svg+xml" href="/kadents-violet-inverted.svg" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
-  <meta name="theme-color" content="#1d1f21">
+  <meta name="theme-color" content="#161719">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=Martian+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="/shelf/shelf.css" />
+  <link rel="preload" href="/maps/tv.json" as="fetch" crossorigin>
+  <link rel="stylesheet" href="/maps/map.css" />
 </head>
 <body data-kind="tv">
-  <header class="top">
+  <canvas id="map" aria-label="Map of shows. Use the search box to find one."></canvas>
+  <p id="loading">Loading the map</p>
+
+  <header class="head panel">
     <a class="home" href="/">&larr; KADENTS</a>
-    <h1>TV</h1>
-    <p class="sub">Every show I've watched, rated.</p>
-    <nav class="tabs" aria-label="Other pages">
-      <a href="/movies/">Movies</a>
-      <a href="/tv/" aria-current="page">TV</a>
-      <a href="/music/">Music</a>
+    <nav aria-label="Maps">
+        <a href="/movies/">Movies</a>
+        <a href="/tv/" aria-current="page">TV</a>
+        <a href="/music/">Music</a>
     </nav>
-    <div class="tools">
-      <label class="search"><span class="sr">Search</span><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
-      <div class="sort" role="group" aria-label="Sort">
-        <button data-sort="recent">Recent</button>
-        <button data-sort="rating">Rating</button>
-        <button data-sort="title">A&ndash;Z</button>
-        <button data-sort="year">Release</button>
-      </div>
+    <p class="meta"><b id="count">…</b> shows · <span id="source"></span></p>
+    <div class="search">
+      <input id="q" type="search" placeholder="Find a title  /" autocomplete="off" aria-label="Find a title">
+      <ol id="results" hidden></ol>
     </div>
-    <dl class="stats" id="stats"></dl>
+    <p class="how">Similar shows sit together: genre, country, era, cast and premise. Scroll or pinch to zoom, drag to move, click a dot.</p>
   </header>
 
-  <main id="shelf" aria-live="polite"></main>
+  <button id="groupsBtn" class="panel" type="button">Groups</button>
+  <div class="groups panel"><ol id="clusters"></ol></div>
+  <div class="zoom panel">
+    <button id="zout" type="button" aria-label="Zoom out">&minus;</button>
+    <button id="zfit" type="button" aria-label="Show everything">&#9634;</button>
+    <button id="zin" type="button" aria-label="Zoom in">+</button>
+  </div>
 
-  <dialog id="detail">
-    <button class="close" type="button" aria-label="Close">&times;</button>
-    <div class="d-art"><img alt=""></div>
-    <div class="d-body">
-      <p class="d-kind mono"></p>
-      <h2 class="d-title"></h2>
-      <p class="d-meta mono"></p>
-      <p class="d-stars"></p>
-      <p class="d-note"></p>
-      <p class="d-more"></p>
-    </div>
-  </dialog>
+  <div id="tip" hidden></div>
+  <section id="card" class="panel" hidden aria-live="polite"></section>
 
-  <script src="/shelf/data.js"></script>
-  <script src="/shelf/shelf.js"></script>
+  <script src="/maps/map.js"></script>
 </body>
 </html>
