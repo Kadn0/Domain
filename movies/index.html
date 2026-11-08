@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Movies · Kadents</title>
+  <meta name="description" content="Every film I've watched, rated." />
+  <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/svg+xml" href="/kadents-violet-inverted.svg" media="(prefers-color-scheme: dark)">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#1d1f21">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=Martian+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/shelf/shelf.css" />
+</head>
+<body data-kind="movies">
+  <header class="top">
+    <a class="home" href="/">&larr; KADENTS</a>
+    <h1>Movies</h1>
+    <p class="sub">Every film I've watched, rated.</p>
+    <nav class="tabs" aria-label="Other pages">
+      <a href="/movies/" aria-current="page">Movies</a>
+      <a href="/tv/">TV</a>
+      <a href="/music/">Music</a>
+    </nav>
+    <div class="tools">
+      <label class="search"><span class="sr">Search</span><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
+      <div class="sort" role="group" aria-label="Sort">
+        <button data-sort="recent">Recent</button>
+        <button data-sort="rating">Rating</button>
+        <button data-sort="title">A&ndash;Z</button>
+        <button data-sort="year">Release</button>
+      </div>
+    </div>
+    <dl class="stats" id="stats"></dl>
+  </header>
+
+  <main id="shelf" aria-live="polite"></main>
+
+  <dialog id="detail">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+    <div class="d-art"><img alt=""></div>
+    <div class="d-body">
+      <p class="d-kind mono"></p>
+      <h2 class="d-title"></h2>
+      <p class="d-meta mono"></p>
+      <p class="d-stars"></p>
+      <p class="d-note"></p>
+      <p class="d-more"></p>
+    </div>
+  </dialog>
+
+  <script src="/shelf/data.js"></script>
+  <script src="/shelf/shelf.js"></script>
+</body>
+</html>

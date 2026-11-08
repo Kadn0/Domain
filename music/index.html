@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Shelf · Kadents</title>
-  <meta name="description" content="Every movie, show and album Kaden has finished, with ratings." />
+  <title>Music · Kadents</title>
+  <meta name="description" content="Every album I've listened to, rated." />
   <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/svg+xml" href="/kadents-violet-inverted.svg" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
@@ -13,17 +13,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500&family=Martian+Mono:wght@400;500&display=swap">
-  <link rel="stylesheet" href="shelf.css" />
+  <link rel="stylesheet" href="/shelf/shelf.css" />
 </head>
-<body>
+<body data-kind="music">
   <header class="top">
     <a class="home" href="/">&larr; KADENTS</a>
-    <h1>Shelf</h1>
-    <p class="sub">Everything I've watched and listened to, rated.</p>
-    <nav class="tabs" role="tablist" aria-label="Category">
-      <button role="tab" data-tab="movies">Movies <span data-count="movies"></span></button>
-      <button role="tab" data-tab="tv">TV <span data-count="tv"></span></button>
-      <button role="tab" data-tab="music">Music <span data-count="music"></span></button>
+    <h1>Music</h1>
+    <p class="sub">Every album I've listened to, rated.</p>
+    <nav class="tabs" aria-label="Other pages">
+      <a href="/movies/">Movies</a>
+      <a href="/tv/">TV</a>
+      <a href="/music/" aria-current="page">Music</a>
     </nav>
     <div class="tools">
       <label class="search"><span class="sr">Search</span><input id="q" type="search" placeholder="Search" autocomplete="off"></label>
@@ -52,7 +52,7 @@
     </div>
   </dialog>
 
-  <script src="data.js"></script>
-  <script src="shelf.js"></script>
+  <script src="/shelf/data.js"></script>
+  <script src="/shelf/shelf.js"></script>
 </body>
 </html>
