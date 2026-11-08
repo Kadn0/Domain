@@ -1,4 +1,5 @@
-/* Shelf: renders window.SHELF (data.js) as a poster grid, grouped by the year each thing was finished.
+/* Shelf: renders one list from window.SHELF (data.js) as a poster grid. Each page (/movies/, /tv/, /music/)
+   names its list with <body data-kind>. Items are grouped by the year each thing was finished.
    Artwork comes from the iTunes Search API, which needs no key. It is fetched over JSONP (the API's CORS
    headers are unreliable), one request at a time to stay under its rate limit, and cached in localStorage. */
 (() => {
@@ -12,9 +13,9 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
   const artCache = store.get(CACHE_KEY, {});
-  const state = { tab: "movies", sort: "recent", q: "", ...store.get("shelf-view", {}) };
-  const fromHash = location.hash.slice(1);
-  if (DATA[fromHash]) state.tab = fromHash;
+  const tab = document.body.dataset.kind in KINDS ? document.body.dataset.kind : "movies";
+  const VIEW_KEY = `shelf-view-${tab}`;
+  const state = { sort: "recent", q: "", ...store.get(VIEW_KEY, {}) };
 
   /* ---------- artwork lookup ---------- */
   const keyOf = (tab, it) => `${tab}|${it.title}|${it.artist || ""}|${it.year || ""}`.toLowerCase();
@@ -128,14 +129,11 @@
   }
 
   function render() {
-    const tab = state.tab;
     const all = DATA[tab] || [];
     const q = norm(state.q);
     const list = q ? all.filter((it) => norm(`${it.title} ${it.artist || ""} ${it.year || ""} ${it.note || ""}`).includes(q)) : all;
 
-    document.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === tab));
     document.querySelectorAll("[data-sort]").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sort === state.sort));
-    for (const k of Object.keys(KINDS)) { const el = $(`[data-count="${k}"]`); if (el) el.textContent = (DATA[k] || []).length; }
 
     const rated = all.filter((it) => it.rating != null);
     const avg = rated.length ? (rated.reduce((s, it) => s + it.rating, 0) / rated.length).toFixed(1) : "–";
@@ -162,13 +160,13 @@
       sec.appendChild(grid);
       main.appendChild(sec);
     }
-    store.set("shelf-view", { sort: state.sort });
+    store.set(VIEW_KEY, { sort: state.sort });
   }
 
   /* ---------- detail dialog ---------- */
   const dlg = $("#detail");
   function open(i) {
-    const tab = state.tab, it = DATA[tab][i];
+    const it = DATA[tab][i];
     const c = artCache[keyOf(tab, it)] || {};
     const src = it.art || c.art || "";
     const img = $(".d-art img", dlg);
@@ -189,13 +187,9 @@
   dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
 
   /* ---------- controls ---------- */
-  document.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => {
-    state.tab = b.dataset.tab; history.replaceState(null, "", `#${state.tab}`); render();
-  }));
   document.querySelectorAll("[data-sort]").forEach((b) => b.addEventListener("click", () => { state.sort = b.dataset.sort; render(); }));
   let t;
   $("#q").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; render(); }, 120); });
-  addEventListener("hashchange", () => { const h = location.hash.slice(1); if (DATA[h]) { state.tab = h; render(); } });
 
   render();
 })();
