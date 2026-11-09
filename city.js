@@ -1425,12 +1425,11 @@ function build() {
       box(d * 1.01, 0.35, w * 1.01, 0, h * 0.55, 0, M.light, g, { edges: false, cast: false });
       for (let i = -1; i <= 1; i += 2) {
         for (let j = -1; j <= 1; j += 1) {
-          const fan = new THREE.Group();
-          fan.position.set(i * d * 0.22, h + 0.25, j * w * 0.28);
-          mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.4, 14), M.mid, 0, 0, 0, fan, { cast: false, line: LINE_SOFT });
-          lines([-0.65, 0.22, 0, 0.65, 0.22, 0, 0, 0.22, -0.65, 0, 0.22, 0.65], LINE, fan);
-          g.add(fan);
-          fans.push(fan);
+          // the housing is round, so it can stay still; only the blades turn, and all fans' blades are drawn
+          // together as one set of lines (see fanBlades below) instead of ~80 separately spinning groups
+          const at = new THREE.Vector3(i * d * 0.22, h + 0.25, j * w * 0.28);
+          mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.4, 14), M.mid, at.x, at.y, at.z, g, { cast: false, line: LINE_SOFT });
+          fans.push({ g, at });
         }
       }
     },
@@ -1555,9 +1554,40 @@ function build() {
   tmp.scale.set(1, 1, 1);
   plinthMesh.receiveShadow = true;
   city.add(plinthMesh);
+  // every fan turns by the same angle, so one line set holds all the blades; its points are rewritten per frame
+  const bladePos = new Float32Array(fans.length * 12);
+  const bladeGeo = new THREE.BufferGeometry();
+  bladeGeo.setAttribute('position', new THREE.BufferAttribute(bladePos, 3));
+  const fanBlades = new THREE.LineSegments(bladeGeo, LINE);
+  fanBlades.frustumCulled = false;
+  scene.add(fanBlades);
+  let fanCentres = null; // world-space centre and axes of each fan, read once the city has its final placement
+  let fanAngle = 0;
+  const bladeEnd = new THREE.Vector3();
+  function spinFans(dt) {
+    if (!fanCentres) {
+      fanCentres = fans.map(({ g, at }) => {
+        g.updateWorldMatrix(true, false);
+        const m = g.matrixWorld;
+        return [at.clone().applyMatrix4(m), new THREE.Vector3(1, 0, 0).transformDirection(m), new THREE.Vector3(0, 0, 1).transformDirection(m), new THREE.Vector3(0, 1, 0).transformDirection(m)];
+      });
+    }
+    fanAngle += dt * 4;
+    const c = Math.cos(fanAngle) * 0.65;
+    const sn = Math.sin(fanAngle) * 0.65;
+    fanCentres.forEach(([o, ax, az, ay], n) => {
+      // two blades: along the fan's rotated x and z axes, 0.22 above the housing's centre
+      const ends = [[c, -sn], [-c, sn], [sn, c], [-sn, -c]];
+      ends.forEach(([u, w], e) => {
+        bladeEnd.copy(o).addScaledVector(ay, 0.22).addScaledVector(ax, u).addScaledVector(az, w);
+        bladeEnd.toArray(bladePos, n * 12 + e * 3);
+      });
+    });
+    bladeGeo.attributes.position.needsUpdate = true;
+  }
   animators.push((t, dt) => {
     cranes.forEach((c) => { c.jib.rotation.y = c.phase + t * c.speed; });
-    fans.forEach((f) => { f.rotation.y += dt * 4; });
+    spinFans(dt);
     searchlights.forEach((s) => { s.pivot.rotation.y = s.phase + t * 0.6; });
   });
 
@@ -1930,13 +1960,40 @@ function build() {
   let shownWidth = 0;
   root.classList.add('three');
 
+  // Quality steps for slow devices: after ~2 s of drawing, if frames average slower than ~40 fps, render at a
+  // lower resolution; if that still isn't enough, stop recomputing shadows every frame (they freeze in place).
+  let quality = 0;
+  let slowSum = 0;
+  let slowCount = 0;
+  function adapt(rawDt) {
+    if (quality >= 2) return;
+    slowSum += rawDt;
+    slowCount += 1;
+    if (slowCount < 120) return;
+    const avg = slowSum / slowCount;
+    slowSum = 0;
+    slowCount = 0;
+    if (avg < 1 / 40) { quality = 2; return; } // fast enough: stop checking
+    quality += 1;
+    if (quality === 1) {
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
+      resize();
+    } else {
+      renderer.shadowMap.autoUpdate = false;
+      renderer.shadowMap.needsUpdate = true;
+    }
+    if (new URLSearchParams(location.search).has('perf')) console.info(`city: ${Math.round(1 / avg)} fps, quality step ${quality}`);
+  }
+
   function frame(now) {
     window.requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const raw = (now - last) / 1000;
+    const dt = Math.min(0.05, raw);
     last = now;
     const active = root.classList.contains('in-chapters');
     if (active) idleUntil = now + 1500;
     if (now > idleUntil || document.hidden) return;
+    if (raw < 0.25) adapt(raw); // ignore the gap after a pause
     clock += dt;
 
     const id = root.dataset.chapter;
@@ -2015,7 +2072,123 @@ function build() {
     if (readout) readout.textContent = Math.round(shownWidth).toLocaleString('en-US');
     if (readoutMeta) readoutMeta.textContent = `HDG ${String(Math.round(((cam.az + drift + 180) % 360 + 360) % 360)).padStart(3, '0')}°  ·  ALT ${Math.round(camera.position.y)}`;
   }
+  const bakeStart = performance.now();
+  if (!new URLSearchParams(location.search).has('nobake')) bakeStatic(scene, animators, () => moveCars(0.3), new Set([mc]), new Set([LINE, LINE_SOFT, LINE_FAINT]));
+  if (new URLSearchParams(location.search).has('perf')) console.info(`city: bake took ${Math.round(performance.now() - bakeStart)} ms`);
   animators.forEach((fn) => fn(2.2, 0.016));
   moveCars(0);
   window.requestAnimationFrame(frame);
+}
+
+// ---------- Baking: the city is ~3,000 separate objects, which costs ~2,600 draw calls a frame and stalls phones.
+// Parts that move together are merged into one mesh (or one set of lines) per material: everything static into
+// world space, and each rigid moving assembly (a crane jib, a satellite, the plane) into its own moving group.
+// Which parts move with what is found by running every animator at several moments and comparing matrices, so
+// new animated parts are handled automatically. `keep` holds groups moved from outside the animators (the
+// Minecraft district shakes from the frame loop for an egg); their contents are merged no higher than them.
+function bakeStatic(scene, animators, stepCars, keep, ownMats = new Set()) {
+  const perf = new URLSearchParams(location.search).has('perf');
+  const objs = [];
+  scene.updateMatrixWorld(true);
+  scene.traverse((o) => { if (o.isMesh || o.isLineSegments) objs.push(o); });
+  const chainOf = (o) => { const c = []; for (let p = o.parent; p; p = p.parent) c.unshift(p); return c; }; // scene first
+  const chains = new Map(objs.map((o) => [o, chainOf(o)]));
+  const nodes = new Set(objs);
+  chains.forEach((c) => c.forEach((g) => nodes.add(g)));
+  const shown = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+  const samples = []; // per sample: Map node -> matrixWorld copy
+  const state = []; // per sample: Map obj -> [visible, material]
+  // what a material looks like; parts whose materials look the same can share one draw call
+  const PROPS = ['type', 'side', 'transparent', 'opacity', 'roughness', 'metalness', 'emissiveIntensity', 'flatShading',
+    'vertexColors', 'depthWrite', 'depthTest', 'wireframe', 'alphaTest', 'blending', 'fog', 'toneMapped', 'dashSize',
+    'gapSize', 'scale', 'linewidth', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits'];
+  const looks = (m) => JSON.stringify([...PROPS.map((k) => m[k]), m.color?.getHex(), m.emissive?.getHex(), m.map?.uuid,
+    m.emissiveMap?.uuid, m.alphaMap?.uuid]);
+  const mats = new Set(objs.flatMap((o) => (Array.isArray(o.material) ? o.material : [o.material])));
+  const mlook = []; // per sample: Map material -> looks
+  const take = () => {
+    samples.push(new Map([...nodes].map((n) => [n, n.matrixWorld.clone()])));
+    state.push(new Map(objs.map((o) => [o, [shown(o), o.material]])));
+    mlook.push(new Map([...mats].map((m) => [m, looks(m)])));
+  };
+  take();
+  for (const t of [0.37, 1.1, 2.9, 5.3, 9.7, 17.1, 31.3, 52.9, 88.1]) {
+    animators.forEach((fn) => fn(t, 0.016));
+    stepCars();
+    scene.updateMatrixWorld(true);
+    take();
+  }
+  const same = (a, b) => a.elements.every((x, j) => Math.abs(x - b.elements[j]) < 1e-5);
+  const inv = new THREE.Matrix4();
+  const rel = (anchor, o, k) => inv.copy(samples[k].get(anchor)).invert().multiply(samples[k].get(o)).clone();
+
+  // a material the animators change (a pulsing glow) or that code recolours later keeps its own identity
+  const changing = new Set([...mats].filter((m) => ownMats.has(m) || mlook.some((ml) => ml.get(m) !== mlook[0].get(m))));
+  const matKey = (m) => (changing.has(m) ? m.uuid : mlook[0].get(m));
+  const groups = new Map();
+  const why = {};
+  const skip = (r) => { why[r] = (why[r] || 0) + 1; };
+  for (const o of objs) {
+    const g = o.geometry;
+    const [vis0, mat0] = state[0].get(o);
+    if (!vis0) { skip('hidden'); continue; }
+    if (state.some((st) => st.get(o)[0] !== vis0 || st.get(o)[1] !== mat0)) { skip('blinks or swaps'); continue; }
+    if (o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material)) { skip('special'); continue; }
+    if (o.renderOrder || o.onBeforeRender !== THREE.Object3D.prototype.onBeforeRender || !g.attributes.position) { skip('custom'); continue; }
+    if (o.isMesh && o.material.transparent) { skip('transparent'); continue; } // see-through meshes keep their sorting
+    // the highest ancestor this object stays rigidly attached to (never above a kept group)
+    let chain = chains.get(o);
+    const k = chain.findIndex((g) => keep.has(g));
+    if (k >= 0) chain = chain.slice(k);
+    let anchor = null;
+    let local = null;
+    for (const a of chain) {
+      const r0 = rel(a, o, 0);
+      if (samples.every((_, n) => n === 0 || same(rel(a, o, n), r0))) { anchor = a; local = r0; break; }
+    }
+    if (!anchor) { skip('moves on its own'); continue; }
+    const attrs = Object.keys(g.attributes).filter((a) => ['position', 'normal', 'uv', 'lineDistance'].includes(a)).sort();
+    const key = [anchor.uuid, o.isMesh ? 'mesh' : 'lines', matKey(o.material), o.castShadow, o.receiveShadow, attrs.join()].join('|');
+    if (!groups.has(key)) groups.set(key, { anchor, first: o, attrs, parts: [] });
+    groups.get(key).parts.push([o, local]);
+  }
+
+  let removed = 0;
+  let made = 0;
+  for (const { anchor, first, attrs, parts } of groups.values()) {
+    if (parts.length < 2) {
+      skip('alone');
+      if (perf) { const o = first; const t = `${o.type}/${o.material.type}/${anchor.isScene ? 'world' : anchor.type + '(' + anchor.children.length + ')'}`; (why.aloneKinds ||= {})[t] = (why.aloneKinds[t] || 0) + 1; }
+      continue;
+    }
+    const pieces = parts.map(([o, local]) => {
+      const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      for (const a of Object.keys(g.attributes)) if (!attrs.includes(a)) g.deleteAttribute(a);
+      g.applyMatrix4(local);
+      return g;
+    });
+    const merged = new THREE.BufferGeometry();
+    for (const a of attrs) {
+      const size = pieces[0].attributes[a].itemSize;
+      const arr = new Float32Array(pieces.reduce((n, g) => n + g.attributes[a].array.length, 0));
+      let off = 0;
+      for (const g of pieces) { arr.set(g.attributes[a].array, off); off += g.attributes[a].array.length; }
+      merged.setAttribute(a, new THREE.BufferAttribute(arr, size));
+    }
+    pieces.forEach((g) => g.dispose());
+    merged.computeBoundingSphere();
+    const out = first.isMesh ? new THREE.Mesh(merged, first.material) : new THREE.LineSegments(merged, first.material);
+    out.castShadow = first.castShadow;
+    out.receiveShadow = first.receiveShadow;
+    anchor.add(out); // identity transform inside the anchor; it moves when the anchor does
+    made++;
+    for (const [o] of parts) {
+      // Move the original to a layer no camera renders (shadow cameras included). Unlike visible = false this
+      // leaves its children drawn, so a moving part attached to a merged one keeps working.
+      o.layers.set(31);
+      removed++;
+    }
+  }
+  if (perf) console.info(`city: merged ${removed} objects into ${made}; left alone`, JSON.stringify(why));
+  return removed;
 }
