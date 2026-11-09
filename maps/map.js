@@ -373,6 +373,7 @@
     for (let i = 0; i < N; i++) if (D.lc[i] === t && (best < 0 || weight(i) > weight(best))) best = i;
     if (best >= 0) select(best, true);
   }
+  addEventListener("hashchange", () => { if (D) fromHash(); });
   addEventListener("resize", () => { const k = view.k / base; resize(); base = Math.min(W, H) / 10400; view.k = base * k; draw(); });
 
   function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
