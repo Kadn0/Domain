@@ -31,7 +31,7 @@
     return im.complete && im.naturalWidth ? im : null;
   }
   const TILE_Z = 5;
-  const tileW = (z) => Math.min(72, 6 + 2.1 * z);
+  const tileW = (z) => Math.min(60, 6 + 1.8 * z);
 
   /* ---------- data ---------- */
   fetch(`/maps/${KIND}.json`).then((r) => r.json()).then((d) => {
@@ -160,7 +160,8 @@
       const x = sx(D.x[i]), y = sy(D.y[i]);
       if (x > -40 && y > -60 && x < W + 40 && y < H + 60 && (focus < 0 || D.c[i] === focus)) vis.push(i);
     }
-    if (vis.length > 900) { vis.sort((a, b) => weight(b) - weight(a)); vis.length = 900; }
+    // only the best-known 300 in view get covers (fewer image requests, less clutter); the rest stay dots
+    if (vis.length > 300) { vis.sort((a, b) => weight(b) - weight(a)); vis.length = 300; }
     vis.sort((a, b) => weight(a) - weight(b));
     const fade = Math.min(1, (z - TILE_Z) / 1.5);
     ctx.globalAlpha = fade;
@@ -168,9 +169,13 @@
       const tw = tileW(z) * (0.75 + 0.25 * D.rad[i]), th = tw * ASPECT;
       const x = sx(D.x[i]) - tw / 2, y = sy(D.y[i]) - th / 2;
       const im = tile(i);
-      ctx.fillStyle = "#26282b"; ctx.fillRect(x - 1, y - 1, tw + 2, th + 2);
-      if (im) ctx.drawImage(im, x, y, tw, th);
-      else { ctx.fillStyle = D.col[D.c[i]]; ctx.fillRect(x, y, tw, th); }
+      if (im) {
+        ctx.fillStyle = "#111"; ctx.fillRect(x - 1, y - 1, tw + 2, th + 2);
+        ctx.drawImage(im, x, y, tw, th);
+      } else {  // still loading: a quiet outline in the region's colour
+        ctx.fillStyle = "rgba(22,23,25,.85)"; ctx.fillRect(x, y, tw, th);
+        ctx.strokeStyle = D.col[D.c[i]]; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, tw - 1, th - 1);
+      }
     }
     ctx.globalAlpha = 1;
   }
