@@ -102,6 +102,19 @@ def name_clusters(labels, tokens, pretty, k=2, min_share=0.2, second_share=0.35)
     return names
 
 
+def neighbours(X, pop=None, k=8, pool=40, metric="cosine"):
+    """The k most similar titles, measured in the full vector space (the 2-D map distorts distance).
+    With pop, a small bonus lifts better-known titles among near-equals."""
+    from sklearn.neighbors import NearestNeighbors
+    dist, idx = NearestNeighbors(n_neighbors=pool + 1, metric=metric).fit(X).kneighbors(X)
+    dist, idx = dist[:, 1:], idx[:, 1:]
+    if pop is not None:
+        p = np.log1p(np.asarray(pop, float)); p = p / p.max()
+        dist = dist / (dist[:, :1] + 1e-9) - 0.35 * p[idx]
+    order = np.argsort(dist, axis=1)[:, :k]
+    return np.take_along_axis(idx, order, axis=1).tolist()
+
+
 def write(name, xy, labels, names, cols, meta):
     lo, hi = xy.min(0), xy.max(0)
     span = (hi - lo).max()
@@ -132,7 +145,7 @@ def movies():
     m = pd.read_csv(SRC / "movies_metadata.csv", low_memory=False)
     m["votes"] = pd.to_numeric(m.vote_count, errors="coerce")
     m["year"] = pd.to_datetime(m.release_date, errors="coerce").dt.year
-    m = m[(m.votes >= 10) & m.year.notna()].drop_duplicates("id").reset_index(drop=True)
+    m = m[(m.votes >= 50) & m.year.notna()].drop_duplicates("id").reset_index(drop=True)
     m["overview"] = m.overview.fillna("")
     toks, docs = [], []
     for r in m.itertuples():
@@ -150,8 +163,8 @@ def movies():
     words = TfidfVectorizer(stop_words=STOP_WORDS, min_df=3, max_features=20000, sublinear_tf=True).fit_transform(m.overview)
     X = sparse.hstack([meta, 0.6 * words]).tocsr()
     X = normalize(TruncatedSVD(120, random_state=SEED).fit_transform(X))
-    xy = embed(X)
-    labels = cluster(xy, max(40, len(m) // 250))
+    xy = embed(X, n_neighbors=25, min_dist=0.25)
+    labels = cluster(xy, max(40, len(m) // 180))
 
     def pretty(t):
         kind, v = t[:2], t[2:]
@@ -168,6 +181,7 @@ def movies():
     names = name_clusters(labels, toks, pretty)
     g = [", ".join(d["name"] for d in lit(s, [])[:3]) for s in m.genres]
     write("movies", xy, labels, names, {
+        "nn": neighbours(X, m.votes.values),
         "t": m.title.fillna("").tolist(),
         "yr": m.year.astype(int).tolist(),
         "r": pd.to_numeric(m.vote_average, errors="coerce").fillna(0).round(1).tolist(),
@@ -176,7 +190,7 @@ def movies():
         "p": [p if isinstance(p, str) else "" for p in m.poster_path],
         "im": m.imdb_id.fillna("").tolist(),
         "d": [o[:220] + ("…" if len(o) > 220 else "") for o in m.overview],
-    }, {"kind": "movies", "source": "The Movies Dataset (TMDB metadata), films with 10+ votes", "size": "v", "poster": "https://image.tmdb.org/t/p/w185"})
+    }, {"kind": "movies", "source": "The Movies Dataset (TMDB metadata), films with 50+ votes", "size": "v", "poster": "https://image.tmdb.org/t/p/w185"})
 
 
 # ---------------------------------------------------------------- tv
@@ -247,6 +261,7 @@ def tv():
     GENRE_NAME = {slug(o): o for _, o in TV_GENRE if o}
     names = name_clusters(labels, toks, pretty)
     write("tv", xy, labels, names, {
+        "nn": neighbours(X),
         "t": df.title.tolist(), "yr": df.year.tolist(),
         "g": [", ".join(x[:3]) for x in df.genres], "pl": [", ".join(x) for x in df.plat],
         "s": df.seasons.tolist(), "a": [", ".join(x[:3]) for x in df.cast],
@@ -279,6 +294,7 @@ def music():
     names = name_clusters(labels, toks, pretty)
     year = pd.to_datetime(s.track_album_release_date, errors="coerce", format="mixed").dt.year.fillna(0).astype(int)
     write("music", xy, labels, names, {
+        "nn": neighbours(X, s.track_popularity.values, metric="euclidean"),
         "t": s.track_name.tolist(), "ar": s.track_artist.fillna("").tolist(), "al": s.track_album_name.fillna("").tolist(),
         "yr": year.tolist(), "v": s.track_popularity.astype(int).tolist(),
         "g": [", ".join(x) for x in s.subs], "id": s.track_id.tolist(),

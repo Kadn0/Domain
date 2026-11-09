@@ -258,7 +258,7 @@
     return [D.yr[i] || "", D.g[i]].filter(Boolean).join(" · ");
   }
   function select(i, fly) {
-    sel = i; near = kNearest(i, 8);
+    sel = i; near = D.nn ? D.nn[i] : kNearest(i, 8);
     hideTip();
     const c = D.c[i];
     let art = "", facts = [], link = "";
