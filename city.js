@@ -30,10 +30,14 @@ function build() {
   const readout = document.getElementById('fieldWidth');
   const readoutMeta = document.getElementById('fieldMeta');
 
+  const q = new URLSearchParams(location.search);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, narrow() ? 1.5 : 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Phones start at 1x: measured, resolution is what limits a phone most (1x roughly doubles the frame rate of
+  // 1.5x). adapt() below raises it to 1.5x once the phone shows it has room, and lowers desktops that struggle.
+  const maxRatio = Math.min(window.devicePixelRatio || 1, q.has('dpr') ? +q.get('dpr') : narrow() ? 1.5 : 2);
+  renderer.setPixelRatio(narrow() && !q.has('dpr') ? 1 : maxRatio);
+  renderer.shadowMap.enabled = q.get('shadow') !== 'off';
+  renderer.shadowMap.type = q.get('shadow') === 'pcf' ? THREE.PCFShadowMap : q.get('shadow') === 'basic' ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   const BG = 0x1d1f21;
   renderer.setClearColor(BG, 1);
 
@@ -1960,29 +1964,60 @@ function build() {
   let shownWidth = 0;
   root.classList.add('three');
 
-  // Quality steps for slow devices: after ~2 s of drawing, if frames average slower than ~40 fps, render at a
-  // lower resolution; if that still isn't enough, stop recomputing shadows every frame (they freeze in place).
-  let quality = 0;
+  // Quality: after ~2 s of drawing, measure the frame rate. A phone that started at 1x and runs above ~55 fps
+  // steps up to its sharper resolution; anything below ~40 fps steps down (1x, then shadows frozen in place).
+  let quality = 0; // 0 measuring, then 'up' / 'settled' / steps down 1, 2
   let slowSum = 0;
   let slowCount = 0;
+  let fps = 0;
   function adapt(rawDt) {
-    if (quality >= 2) return;
     slowSum += rawDt;
     slowCount += 1;
     if (slowCount < 120) return;
     const avg = slowSum / slowCount;
+    fps = Math.round(1 / avg);
     slowSum = 0;
     slowCount = 0;
-    if (avg < 1 / 40) { quality = 2; return; } // fast enough: stop checking
-    quality += 1;
-    if (quality === 1) {
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
+    if (quality === 'settled' || quality === 2) return;
+    if (avg < 1 / 55 && renderer.getPixelRatio() < maxRatio && quality === 0) {
+      renderer.setPixelRatio(maxRatio);
       resize();
+      quality = 'up';
+    } else if (avg < 1 / 40) {
+      quality = 'settled';
+    } else if (renderer.getPixelRatio() > 1) {
+      renderer.setPixelRatio(1);
+      resize();
+      quality = 1;
     } else {
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = true;
+      quality = 2;
     }
-    if (new URLSearchParams(location.search).has('perf')) console.info(`city: ${Math.round(1 / avg)} fps, quality step ${quality}`);
+  }
+
+  // Safari drops the WebGL context when a page uses too much graphics memory, which leaves a frozen picture.
+  // Fall back to the flat map until the browser restores it (three.js re-uploads everything on its own).
+  let contextLost = false;
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); contextLost = true; root.classList.remove('three'); });
+  canvas.addEventListener('webglcontextrestored', () => { contextLost = false; root.classList.add('three'); });
+
+  // ?perf: a small on-screen readout, since a phone has no console to look at
+  const hud = q.has('perf') ? Object.assign(document.body.appendChild(document.createElement('pre')), {
+    style: 'position:fixed;left:8px;bottom:8px;z-index:99;margin:0;padding:6px 8px;background:#000c;color:#fff;font:11px/1.4 monospace;pointer-events:none',
+  }) : null;
+  let hudAt = 0;
+  function showHud(now) {
+    if (!hud || now - hudAt < 500) return;
+    hudAt = now;
+    const gl = renderer.getContext();
+    const info = renderer.info.render;
+    hud.textContent = [
+      `fps ${fps || '…'}  pixel ratio ${renderer.getPixelRatio()}  quality ${quality}`,
+      `draw calls ${info.calls}  triangles ${info.triangles}`,
+      `reduce motion ${reduced ? 'ON' : 'off'}  context ${contextLost || gl.isContextLost() ? 'LOST' : 'ok'}`,
+      `chapter ${root.dataset.chapter || '-'}  drawing ${root.classList.contains('in-chapters') ? 'yes' : 'no (landing)'}`,
+    ].join('\n');
   }
 
   function frame(now) {
@@ -1992,6 +2027,7 @@ function build() {
     last = now;
     const active = root.classList.contains('in-chapters');
     if (active) idleUntil = now + 1500;
+    showHud(now);
     if (now > idleUntil || document.hidden) return;
     if (raw < 0.25) adapt(raw); // ignore the gap after a pause
     clock += dt;
@@ -2018,12 +2054,10 @@ function build() {
     );
     camera.lookAt(cam.target);
 
-    if (!reduced) {
-      moveCars(dt);
-      animators.forEach((fn) => fn(clock, dt));
-    } else if (ledTex) {
-      ledTex.needsUpdate = true;
-    }
+    // Reduce Motion stops the camera's flights and drift above (the large movement that setting is for); the
+    // small loops in the city (cars, lights, fans) keep running, or the page would look frozen.
+    moveCars(dt);
+    animators.forEach((fn) => fn(clock, dt));
 
     // egg colours: RGB mode cycles the line work, all eggs turns it gold
     const lineColor = root.classList.contains('rgb')
@@ -2073,7 +2107,7 @@ function build() {
     if (readoutMeta) readoutMeta.textContent = `HDG ${String(Math.round(((cam.az + drift + 180) % 360 + 360) % 360)).padStart(3, '0')}°  ·  ALT ${Math.round(camera.position.y)}`;
   }
   const bakeStart = performance.now();
-  if (!new URLSearchParams(location.search).has('nobake')) bakeStatic(scene, animators, () => moveCars(0.3), new Set([mc]), new Set([LINE, LINE_SOFT, LINE_FAINT]));
+  if (!new URLSearchParams(location.search).has('nobake')) bakeStatic(scene, animators, () => moveCars(0.3), new Set([mc]), new Set([LINE, LINE_SOFT, LINE_FAINT]), new Set([city]));
   if (new URLSearchParams(location.search).has('perf')) console.info(`city: bake took ${Math.round(performance.now() - bakeStart)} ms`);
   animators.forEach((fn) => fn(2.2, 0.016));
   moveCars(0);
@@ -2086,7 +2120,7 @@ function build() {
 // Which parts move with what is found by running every animator at several moments and comparing matrices, so
 // new animated parts are handled automatically. `keep` holds groups moved from outside the animators (the
 // Minecraft district shakes from the frame loop for an egg); their contents are merged no higher than them.
-function bakeStatic(scene, animators, stepCars, keep, ownMats = new Set()) {
+function bakeStatic(scene, animators, stepCars, keep, ownMats = new Set(), roots = new Set()) {
   const perf = new URLSearchParams(location.search).has('perf');
   const objs = [];
   scene.updateMatrixWorld(true);
@@ -2140,6 +2174,7 @@ function bakeStatic(scene, animators, stepCars, keep, ownMats = new Set()) {
     let chain = chains.get(o);
     const k = chain.findIndex((g) => keep.has(g));
     if (k >= 0) chain = chain.slice(k);
+
     let anchor = null;
     let local = null;
     for (const a of chain) {
@@ -2148,7 +2183,15 @@ function bakeStatic(scene, animators, stepCars, keep, ownMats = new Set()) {
     }
     if (!anchor) { skip('moves on its own'); continue; }
     const attrs = Object.keys(g.attributes).filter((a) => ['position', 'normal', 'uv', 'lineDistance'].includes(a)).sort();
-    const key = [anchor.uuid, o.isMesh ? 'mesh' : 'lines', matKey(o.material), o.castShadow, o.receiveShadow, attrs.join()].join('|');
+    // Parts held only by the scene or the whole city are grouped by a ~70-unit square of map as well, so each
+    // merged piece stays small enough for three.js to skip when it's off screen (one city-sized mesh never is).
+    let cell = '';
+    if (anchor.isScene || roots.has(anchor)) {
+      if (!g.boundingSphere) g.computeBoundingSphere();
+      const c = g.boundingSphere.center.clone().applyMatrix4(o.matrixWorld);
+      cell = `${Math.floor(c.x / 70)},${Math.floor(c.z / 70)}`;
+    }
+    const key = [anchor.uuid, cell, o.isMesh ? 'mesh' : 'lines', matKey(o.material), o.castShadow, o.receiveShadow, attrs.join()].join('|');
     if (!groups.has(key)) groups.set(key, { anchor, first: o, attrs, parts: [] });
     groups.get(key).parts.push([o, local]);
   }
