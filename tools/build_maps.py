@@ -181,13 +181,36 @@ DULL_KW = {"based_on_novel_or_book", "woman_director", "duringcreditsstinger", "
            "seinen", "shoujo", "josei", "reboot", "spin_off", "prequel", "new_york_city", "los_angeles_california"}
 
 
+def load_ml():
+    rows, seen = [], set()
+    for line in (SRC / "ml_neighbors.jsonl").open():
+        r = json.loads(line)
+        if r["tmdb"] not in seen:
+            seen.add(r["tmdb"]); rows.append(r)
+    return rows
+
+
 def screen(kind, min_votes):
-    rows = [r for r in load(f"tmdb_{kind}.jsonl") if r["v"] >= min_votes and r["t"] and r["p"]]
+    tm = {r["id"]: r for r in load(f"tmdb_{kind}.jsonl")}
+    if kind == "movie":
+        # Films: "loved together" from MovieLens ratings (tools/movielens_cf.py). TMDB's own film
+        # recommendations are weak, so they only attach films too new for MovieLens (after late 2023).
+        ml = {r["tmdb"]: r for r in load_ml()}
+        keep = set(ml) | {i for i, r in tm.items() if r["y"] >= "2023" and r["v"] >= min_votes}
+        rows = [tm[i] for i in keep if i in tm and tm[i]["t"] and tm[i]["p"]]
+    else:
+        rows = [r for r in tm.values() if r["v"] >= min_votes and r["t"] and r["p"]]
+    rows.sort(key=lambda r: -r["v"])
     idx = {r["id"]: i for i, r in enumerate(rows)}
     n = len(rows)
-    links = [[idx[j] for j, _ in r["rec"] if j in idx] for r in rows]
-    sims = [[idx[j] for j in r["sim"][:8] if j in idx] for r in rows]
-    A = link_matrix(n, links) + 0.25 * link_matrix(n, sims)
+    if kind == "movie":
+        links = [[idx[t] for t, _ in ml[r["id"]]["nn"] if t in idx][:15] if r["id"] in ml else [idx[j] for j, _ in r["rec"] if j in idx] for r in rows]
+        tmdb_links = [[idx[j] for j, _ in r["rec"] if j in idx] for r in rows]
+        A = link_matrix(n, links) + 0.15 * link_matrix(n, tmdb_links)
+    else:
+        links = [[idx[j] for j, _ in r["rec"] if j in idx] for r in rows]
+        sims = [[idx[j] for j in r["sim"][:8] if j in idx] for r in rows]
+        A = link_matrix(n, links) + 0.25 * link_matrix(n, sims)
     toks, docs = [], []
     for r in rows:
         t = {f"g_{slug(g)}" for g in r["g"]} | {f"k_{slug(k)}" for k in r["kw"][:15]} | {f"l_{r['lang']}"}
@@ -232,7 +255,7 @@ def screen(kind, min_votes):
     else:
         cols["im"] = [r.get("imdb", "") for r in rows]
     name = "movies" if kind == "movie" else "tv"
-    write(name, xy, labels, names, cols, {"kind": name, "source": "TMDB", "size": "v", "built": TODAY})
+    write(name, xy, labels, names, cols, {"kind": name, "source": "MovieLens ratings + TMDB" if kind == "movie" else "TMDB", "size": "v", "built": TODAY})
 
 
 # ---------------------------------------------------------------- music (Deezer)
@@ -257,4 +280,4 @@ def music(min_fans=25_000):
 
 if __name__ == "__main__":
     for which in sys.argv[2:] or ["movies", "tv", "music"]:
-        {"movies": lambda: screen("movie", 150), "tv": lambda: screen("tv", 40), "music": music}[which]()
+        {"movies": lambda: screen("movie", 150), "tv": lambda: screen("tv", 25), "music": music}[which]()

@@ -13,7 +13,12 @@ The formula, step by step:
   3. Two films' score is how much weighted love they share, divided by (popularity_a x popularity_b) ** 0.5 for
      the *rarer* pairing and pulled down with a shrinkage term for pairs only a handful of people share.
      That is cosine similarity with shrinkage; ALPHA tilts it away from always recommending blockbusters.
+  4. Release-era correction. MovieLens' early members rated films as they came out, so two 1996 films look
+     alike just for being 1996. For each pair of 3-year release bins we take the average score; where that
+     average is above normal, scores in those bins are divided by (average / normal) ** ERA. It only ever
+     discounts, never boosts, so far-apart eras are left alone.
 """
+import re
 import json
 import sys
 from pathlib import Path
@@ -26,7 +31,8 @@ SRC = Path(sys.argv[1])
 MIN_RATINGS = int(sys.argv[2]) if len(sys.argv) > 2 else 150
 LOVE = 4.0
 SHRINK = float(sys.argv[4]) if len(sys.argv) > 4 else 25.0   # co-likes needed before a pair's score is trusted fully
-ALPHA = float(sys.argv[3]) if len(sys.argv) > 3 else 0.55    # 0.5 = plain cosine; higher favours less-popular matches
+ALPHA = float(sys.argv[3]) if len(sys.argv) > 3 else 0.7     # 0.5 = plain cosine; higher favours less-popular matches
+ERA = 0.75      # how hard to discount pairs from release years that are over-represented together
 K = 30
 
 
@@ -64,6 +70,15 @@ def main():
 
     links = pd.read_csv(ml / "links.csv").set_index("movieId")
     meta = pd.read_csv(ml / "movies.csv").set_index("movieId")
+    years = np.array([int(m.group(1)) if (m := re.search(r"\((\d{4})\)\s*$", str(meta.title.get(f, "")))) else 2000 for f in films])
+    b = np.clip((years - 1930) // 3, 0, 40)
+    nb = b.max() + 1
+    tot, cnt = np.zeros((nb, nb)), np.zeros((nb, nb))
+    np.add.at(tot, (b[:, None], b[None, :]), sim)
+    np.add.at(cnt, (b[:, None], b[None, :]), 1)
+    base = tot / np.maximum(cnt, 1)
+    base = base / np.median(base[base > 0])
+    sim = (sim / np.maximum(base[b][:, b], 1.0) ** ERA).astype(np.float32)
     out = SRC / "ml_neighbors.jsonl"
     with out.open("w") as f:
         for a, mid in enumerate(films):
