@@ -12,6 +12,27 @@
   /* ---------- colours: one muted hue per cluster, spaced by the golden angle ---------- */
   const colour = (c) => `hsl(${(c * 137.508 + 18) % 360} 52% 63%)`;
 
+  /* ---------- covers: TMDB posters, Deezer album art ---------- */
+  const TMDB = "https://image.tmdb.org/t/p/", DZ = "https://cdn-images.dzcdn.net/images/";
+  const SQUARE = KIND === "music", ASPECT = SQUARE ? 1 : 1.5;
+  function img(i, big) {
+    const p = D.p[i];
+    if (!p) return "";
+    return SQUARE ? `${DZ}cover/${p}/${big ? "250x250" : "120x120"}-000000-80-0-0.jpg` : `${TMDB}${big ? "w342" : "w92"}${p}`;
+  }
+  const cache = new Map();
+  function tile(i) {
+    let im = cache.get(i);
+    if (!im) {
+      if (cache.size > 1800) cache.delete(cache.keys().next().value);
+      im = new Image(); im.decoding = "async"; im.onload = draw; im.src = img(i, false);
+      cache.set(i, im);
+    }
+    return im.complete && im.naturalWidth ? im : null;
+  }
+  const TILE_Z = 5;
+  const tileW = (z) => Math.min(60, 6 + 1.8 * z);
+
   /* ---------- data ---------- */
   fetch(`/maps/${KIND}.json`).then((r) => r.json()).then((d) => {
     D = d; N = d.x.length;
@@ -115,14 +136,48 @@
       for (const j of near) { ctx.beginPath(); ctx.moveTo(sx(D.x[sel]), sy(D.y[sel])); ctx.lineTo(sx(D.x[j]), sy(D.y[j])); ctx.stroke(); }
       ring(sel, "#fff", 2);
     }
+    if (z > TILE_Z) tiles(z);
     if (hover >= 0 && hover !== sel) ring(hover, "#fff", 1.5);
+    if (sel >= 0 && z > TILE_Z) ring(sel, "#fff", 2);
     labels(z);
     // individual titles once zoomed in far enough to read them
     if (z > 7) titles(z);
   }
   function ring(i, c, w) {
     ctx.strokeStyle = c; ctx.lineWidth = w;
+    const z = view.k / base;
+    if (z > TILE_Z) {
+      const tw = tileW(z) * (0.75 + 0.25 * D.rad[i]), th = tw * ASPECT;
+      ctx.strokeRect(sx(D.x[i]) - tw / 2 - 2, sy(D.y[i]) - th / 2 - 2, tw + 4, th + 4);
+      return;
+    }
     ctx.beginPath(); ctx.arc(sx(D.x[i]), sy(D.y[i]), 6 + D.rad[i] * 2, 0, 6.2832); ctx.stroke();
+  }
+  // covers instead of dots once zoomed in; best-known drawn last so they sit on top
+  function tiles(z) {
+    const vis = [];
+    for (let i = 0; i < N; i++) {
+      const x = sx(D.x[i]), y = sy(D.y[i]);
+      if (x > -40 && y > -60 && x < W + 40 && y < H + 60 && (focus < 0 || D.c[i] === focus)) vis.push(i);
+    }
+    // only the best-known 300 in view get covers (fewer image requests, less clutter); the rest stay dots
+    if (vis.length > 300) { vis.sort((a, b) => weight(b) - weight(a)); vis.length = 300; }
+    vis.sort((a, b) => weight(a) - weight(b));
+    const fade = Math.min(1, (z - TILE_Z) / 1.5);
+    ctx.globalAlpha = fade;
+    for (const i of vis) {
+      const tw = tileW(z) * (0.75 + 0.25 * D.rad[i]), th = tw * ASPECT;
+      const x = sx(D.x[i]) - tw / 2, y = sy(D.y[i]) - th / 2;
+      const im = tile(i);
+      if (im) {
+        ctx.fillStyle = "#111"; ctx.fillRect(x - 1, y - 1, tw + 2, th + 2);
+        ctx.drawImage(im, x, y, tw, th);
+      } else {  // still loading: a quiet outline in the region's colour
+        ctx.fillStyle = "rgba(22,23,25,.85)"; ctx.fillRect(x, y, tw, th);
+        ctx.strokeStyle = D.col[D.c[i]]; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, tw - 1, th - 1);
+      }
+    }
+    ctx.globalAlpha = 1;
   }
   function labels(z) {
     if (z > 7) return;
@@ -158,15 +213,18 @@
     }
     if (vis.length > 6000) return;
     vis.sort((a, b) => weight(b) - weight(a));
+    ctx.shadowColor = "rgba(0,0,0,.9)"; ctx.shadowBlur = 4;
     for (const i of vis) {
       if (placed.length > 160) break;
-      const x = sx(D.x[i]) + 6 + D.rad[i] * 2, y = sy(D.y[i]);
+      const off = z > TILE_Z ? tileW(z) * (0.75 + 0.25 * D.rad[i]) / 2 + 5 : 6 + D.rad[i] * 2;
+      const x = sx(D.x[i]) + off, y = sy(D.y[i]);
       const w = ctx.measureText(D.t[i]).width;
       const box = [x, y - 7, w, 14];
       if (placed.some((b) => box[0] < b[0] + b[2] && b[0] < box[0] + box[2] && box[1] < b[1] + b[3] && b[1] < box[1] + box[3])) continue;
       placed.push(box);
       ctx.fillText(D.t[i], x, y);
     }
+    ctx.shadowBlur = 0;
   }
 
   /* ---------- pointer: pan, pinch, hover, click ---------- */
@@ -236,6 +294,8 @@
   function pick(px, py, tol) {
     if (!D) return -1;
     const skip = focus >= 0 ? (i) => D.c[i] !== focus : null;
+    const z = view.k / base;
+    if (z > TILE_Z) tol = Math.max(tol, tileW(z) * 0.6);
     return nearest(dx(px), dy(py), tol / view.k, skip);
   }
   function onHover(e) {
@@ -253,41 +313,47 @@
   function hideTip() { tip.hidden = true; if (hover >= 0) { hover = -1; draw(); } }
 
   /* ---------- details card ---------- */
+  const fmt = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n));
   function sub(i) {
-    if (KIND === "music") return [D.ar[i], D.yr[i] || ""].filter(Boolean).join(" · ");
+    if (KIND === "music") return `${fmt(D.v[i])} fans`;
     return [D.yr[i] || "", D.g[i]].filter(Boolean).join(" · ");
   }
   function select(i, fly) {
     sel = i; near = D.nn ? D.nn[i] : kNearest(i, 8);
     hideTip();
     const c = D.c[i];
-    let art = "", facts = [], link = "";
+    let art = "", facts = [], links = [], extra = "";
     if (KIND === "movies") {
-      if (D.p[i]) art = `<img src="${esc(D.meta.poster + D.p[i])}" alt="" onerror="this.remove()">`;
       if (D.r[i]) facts.push(`★ ${D.r[i].toFixed(1)} <small>(${D.v[i].toLocaleString()} votes)</small>`);
-      if (D.im[i]) link = `https://www.imdb.com/title/${encodeURIComponent(D.im[i])}/`;
-    } else if (KIND === "tv") {
-      facts.push(esc(D.s[i]), esc(D.pl[i]));
+      if (D.cr[i]) facts.push(`By ${esc(D.cr[i])}`);
       if (D.a[i]) facts.push(`With ${esc(D.a[i])}`);
-      link = `https://www.justwatch.com/us/search?q=${encodeURIComponent(D.t[i])}`;
+      links.push(["TMDB", `https://www.themoviedb.org/movie/${D.id[i]}`]);
+      if (D.im[i]) links.push(["IMDb", `https://www.imdb.com/title/${encodeURIComponent(D.im[i])}/`]);
+    } else if (KIND === "tv") {
+      if (D.r[i]) facts.push(`★ ${D.r[i].toFixed(1)} <small>(${D.v[i].toLocaleString()} votes)</small>`);
+      facts.push([D.s[i] ? `${D.s[i]} season${D.s[i] > 1 ? "s" : ""}` : "", esc(D.net[i])].filter(Boolean).join(" · "));
+      if (D.cr[i]) facts.push(`Created by ${esc(D.cr[i])}`);
+      if (D.a[i]) facts.push(`With ${esc(D.a[i])}`);
+      links.push(["TMDB", `https://www.themoviedb.org/tv/${D.id[i]}`], ["Where to watch", `https://www.justwatch.com/us/search?q=${encodeURIComponent(D.t[i])}`]);
     } else {
-      facts.push(`From ${esc(D.al[i])}`, esc(D.g[i]));
-      const [dn, en, va, ac] = D.f[i];
-      facts.push(`<span class="bars">${bar("Dance", dn)}${bar("Energy", en)}${bar("Mood", va)}${bar("Acoustic", ac)}</span>`);
-      link = `https://open.spotify.com/track/${encodeURIComponent(D.id[i])}`;
+      links.push(["Listen on Deezer", `https://www.deezer.com/artist/${D.id[i]}`]);
+      extra = `<div class="albums">${D.al[i].map(([id, t, y, cv]) => `<a href="https://www.deezer.com/album/${id}" target="_blank" rel="noopener"><img src="${DZ}cover/${cv}/250x250-000000-80-0-0.jpg" alt="" loading="lazy"><span>${esc(t)}</span><small>${esc(y)}</small></a>`).join("")}</div>`;
     }
+    const big = KIND === "music" && D.pic[i] ? `${DZ}artist/${D.pic[i]}/250x250-000000-80-0-0.jpg` : img(i, true);
+    if (big) art = `<img class="${SQUARE ? "sq" : ""}" src="${esc(big)}" alt="" onerror="this.remove()">`;
     card.innerHTML = `
       <button class="x" type="button" aria-label="Close">&times;</button>
       <div class="c-top">${art}<div>
         <p class="c-cl"><i style="background:${D.col[c]}"></i><button type="button" data-c="${c}">${esc(D.clusters[c].name)}</button></p>
         <h2>${esc(D.t[i])}</h2>
         <p class="c-sub">${esc(sub(i))}</p>
-        ${facts.map((f) => `<p class="c-f">${f}</p>`).join("")}
-        ${D.d && D.d[i] ? `<p class="c-d">${esc(D.d[i])}</p>` : ""}
-        ${link ? `<a class="c-link" href="${esc(link)}" target="_blank" rel="noopener">${KIND === "movies" ? "IMDb" : KIND === "tv" ? "Where to watch" : "Play on Spotify"} &rarr;</a>` : ""}
+        ${facts.filter(Boolean).map((f) => `<p class="c-f">${f}</p>`).join("")}
+        <p class="c-links">${links.map(([l, u]) => `<a class="c-link" href="${esc(u)}" target="_blank" rel="noopener">${l} &rarr;</a>`).join("")}</p>
       </div></div>
-      <p class="c-h">Nearby</p>
-      <ol class="near">${near.map((j) => `<li><button type="button" data-i="${j}"><i style="background:${D.col[D.c[j]]}"></i>${esc(D.t[j])} <small>${esc(KIND === "music" ? D.ar[j] : D.yr[j] || "")}</small></button></li>`).join("")}</ol>`;
+      ${D.d && D.d[i] ? `<p class="c-d">${esc(D.d[i])}</p>` : ""}
+      ${extra}
+      <p class="c-h">If you like ${esc(D.t[i])}</p>
+      <ol class="near">${near.map((j) => `<li><button type="button" data-i="${j}"><img class="${SQUARE ? "sq" : ""}" src="${esc(img(j, false))}" alt="" loading="lazy"><span>${esc(D.t[j])}<small>${esc(KIND === "music" ? fmt(D.v[j]) + " fans" : D.yr[j] || "")}</small></span></button></li>`).join("")}</ol>`;
     card.hidden = false;
     history.replaceState(null, "", `#${encodeURIComponent(D.t[i])}`);
     if (fly) {
@@ -338,7 +404,6 @@
       else if (at === 0 || bare(t).startsWith(s)) rank = 1;
       else if (at > 0 && /\W/.test(t[at - 1])) rank = 2;
       else if (at > 0) rank = 3;
-      else if (KIND === "music" && D.ar[i].toLowerCase().includes(s)) rank = 2;
       if (rank >= 0) hits.push([rank, -weight(i), t.length, i]);
     }
     hits = hits.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).slice(0, 8).map((h) => h[3]);
