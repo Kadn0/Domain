@@ -67,11 +67,12 @@ i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-r
 #tip span { font-size: 12px; color: var(--muted); }
 
 /* details */
-#card { position: fixed; left: 16px; bottom: 16px; width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 340px); min-height: 160px; overflow: auto; z-index: 3; padding: 16px 18px; }
+#card { position: fixed; left: 16px; bottom: 16px; width: min(420px, calc(100vw - 32px)); max-height: calc(100vh - 290px); min-height: 160px; overflow: auto; z-index: 3; padding: 16px 18px; }
 #card .x { position: absolute; top: 6px; right: 10px; font-size: 22px; color: var(--muted); }
 #card .x:hover { color: var(--ink); }
 .c-top { display: flex; gap: 14px; }
-.c-top img { width: 92px; aspect-ratio: 2/3; object-fit: cover; flex: none; background: #222; }
+.c-top img { width: 112px; aspect-ratio: 2/3; object-fit: cover; flex: none; background: #222; align-self: flex-start; }
+.c-top img.sq { aspect-ratio: 1; border-radius: 50%; }
 .c-cl { margin: 0; font: 400 10px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-right: 20px; }
 .c-cl button:hover { color: var(--ink); text-decoration: underline; }
 #card h2 { font: 400 22px/1.15 var(--sans); margin: 6px 0 2px; }
@@ -79,17 +80,23 @@ i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-r
 .c-f { margin: 2px 0; font-size: 13px; }
 .c-f small { color: var(--muted); }
 .c-d { margin: 8px 0 0; font-size: 13px; color: #c9c8c3; }
+.c-links { display: flex; gap: 14px; flex-wrap: wrap; margin: 0; }
 .c-link { display: inline-block; margin-top: 8px; font: 400 10px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .c-link:hover { color: var(--ink); }
 .c-h { margin: 14px 0 4px; padding-top: 10px; border-top: 1px solid var(--rule); font: 400 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.near { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 12px; }
-.near button { display: block; width: 100%; padding: 3px 0; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; break-inside: avoid; }
-.near button:hover { color: #fff; text-decoration: underline; }
-.near small { color: var(--muted); }
-.bars { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin-top: 6px; }
-.bars span { display: flex; align-items: center; gap: 6px; }
-.bars em { font: normal 400 10px var(--mono); color: var(--muted); width: 58px; }
-.bars b { flex: 1; height: 3px; background: linear-gradient(90deg, var(--ink) calc(var(--v) * 100%), rgba(255,255,255,.12) 0); }
+.near { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.near button { display: flex; align-items: center; gap: 9px; width: 100%; padding: 2px 0; font-size: 13px; line-height: 1.2; }
+.near img { width: 30px; aspect-ratio: 2/3; object-fit: cover; flex: none; background: #26282b; }
+.near img.sq { aspect-ratio: 1; }
+.near span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.near small { display: block; color: var(--muted); font-size: 11px; }
+.near button:hover span { color: #fff; text-decoration: underline; }
+.albums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
+.albums a { text-decoration: none; font-size: 12px; line-height: 1.2; min-width: 0; }
+.albums img { width: 100%; aspect-ratio: 1; display: block; background: #26282b; margin-bottom: 4px; }
+.albums span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.albums small { color: var(--muted); font-size: 11px; }
+.albums a:hover span { text-decoration: underline; }
 
 @media (max-width: 640px) {
   .head { top: 8px; left: 8px; width: calc(100vw - 16px); padding: 12px 14px; }
@@ -98,5 +105,5 @@ i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-r
   #groupsBtn { top: auto; bottom: 16px; right: auto; left: 16px; }
   .groups { top: auto; left: 8px; right: 8px; bottom: 64px; width: auto; max-height: 45vh; }
   #card { left: 8px; bottom: 8px; width: calc(100vw - 16px); max-height: 52vh; }
-  .near { columns: 1; }
+  .c-top img { width: 84px; }
 }
