@@ -237,10 +237,8 @@ def screen(kind, min_votes):
             return v.replace("_", " ").title().replace(" Collection", "")
         return None
 
-    tags = name_by_tokens(labels, toks, pretty)
-    eg = examples(labels, [r["t"] for r in rows], [r["v"] for r in rows], k=1)
-    # "Crime · Drug dealer" reads better with a landmark: "Crime · Drug dealer (Breaking Bad)"
-    names = unique([f"{t} ({e})" if t else e for t, e in zip(tags, eg)])
+    # Regions are taste neighbourhoods, which genre tags describe badly; name each by its two best-known titles.
+    names = unique(examples(labels, [r["t"] for r in rows], [r["v"] for r in rows], k=2))
     nn = nearby(X, links, [r["v"] for r in rows])
     cols = {
         "id": [r["id"] for r in rows], "t": [r["t"] for r in rows], "yr": [int(r["y"] or 0) for r in rows],
