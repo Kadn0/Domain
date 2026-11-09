@@ -3,6 +3,7 @@ keywords, top cast, creators, and TMDB's "recommendations" (what people who enga
 engage with). Those recommendations are what places Better Call Saul next to Breaking Bad.
 
     TMDB_TOKEN=... python tools/fetch_tmdb.py <cache dir> movie|tv [pages]
+    TMDB_TOKEN=... python tools/fetch_tmdb.py <cache dir> movie --ids <file of TMDB ids, one per line>
 
 The token is a TMDB "API Read Access Token" (free: themoviedb.org > Settings > API), sent as a Bearer header.
 (In the cloud session that built this, a proxy injected it, so TMDB_TOKEN was a placeholder.)
@@ -21,7 +22,8 @@ import requests
 API = "https://api.themoviedb.org/3"
 OUT = Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
 KIND = sys.argv[2]
-PAGES = int(sys.argv[3]) if len(sys.argv) > 3 else 500
+IDS = Path(sys.argv[4]) if len(sys.argv) > 4 and sys.argv[3] == "--ids" else None
+PAGES = int(sys.argv[3]) if len(sys.argv) > 3 and not IDS else 500
 FILE = OUT / f"tmdb_{KIND}.jsonl"
 
 session = requests.Session()
@@ -103,7 +105,7 @@ def main():
     done = set()
     if FILE.exists():
         done = {json.loads(l)["id"] for l in FILE.open()}
-    ids = discover()
+    ids = {int(l): 0 for l in IDS.read_text().split()} if IDS else discover()
     todo = [i for i in sorted(ids, key=lambda i: -ids[i]) if i not in done]
     print(f"{KIND}: {len(ids)} discovered, {len(done)} cached, {len(todo)} to fetch", flush=True)
     with FILE.open("a") as out, ThreadPoolExecutor(24) as pool:
