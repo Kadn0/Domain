@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Music map · Kadents</title>
-  <meta name="description" content="A map of songs, where similar songs sit next to each other." />
+  <meta name="description" content="A map of artists, where artists with the same fans sit next to each other." />
   <link rel="icon" type="image/svg+xml" href="/kadents-violet.svg" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/svg+xml" href="/kadents-violet-inverted.svg" media="(prefers-color-scheme: dark)">
   <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/maps/map.css" />
 </head>
 <body data-kind="music">
-  <canvas id="map" aria-label="Map of songs. Use the search box to find one."></canvas>
+  <canvas id="map" aria-label="Map of artists. Use the search box to find one."></canvas>
   <p id="loading">Loading the map</p>
 
   <header class="head panel">
@@ -27,12 +27,12 @@
         <a href="/tv/">TV</a>
         <a href="/music/" aria-current="page">Music</a>
     </nav>
-    <p class="meta"><b id="count">…</b> songs · <span id="source"></span></p>
+    <p class="meta"><b id="count">…</b> artists · <span id="source"></span></p>
     <div class="search">
       <input id="q" type="search" placeholder="Find a title  /" autocomplete="off" aria-label="Find a title">
       <ol id="results" hidden></ol>
     </div>
-    <p class="how">Similar songs sit together, by how they sound and the style they're filed under. Scroll or pinch to zoom, drag to move, click a dot.</p>
+    <p class="how">Artists whose fans overlap sit together. Zoom in to see album covers. Scroll or pinch to zoom, drag to move, click a dot.</p>
   </header>
 
   <button id="groupsBtn" class="panel" type="button">Groups</button>
