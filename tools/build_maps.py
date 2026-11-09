@@ -50,23 +50,30 @@ def load(name):
 
 
 # ---------------------------------------------------------------- shared machinery
-def link_matrix(n, links):
-    """links: per node, an ordered list of node indices it recommends. Symmetric, rank-weighted adjacency."""
+def link_matrix(n, links, decay=4.0, mutual=2.0):
+    """links: per node, an ordered list of node indices it recommends. Symmetric adjacency where a link's
+    weight falls with its rank, and pairs that recommend each other (Breaking Bad <-> Better Call Saul)
+    pull harder."""
+    pos = [{j: r for r, j in enumerate(js)} for js in links]
     r, c, w = [], [], []
     for i, js in enumerate(links):
         for rank, j in enumerate(js):
-            if j != i:
-                r.append(i); c.append(j); w.append(1.0 / (1 + 0.12 * rank))
+            if j == i:
+                continue
+            wt = math.exp(-rank / decay)
+            if i in pos[j]:
+                wt *= 1 + mutual * math.exp(-pos[j][i] / decay)
+            r.append(i); c.append(j); w.append(wt)
     A = sparse.csr_matrix((w, (r, c)), shape=(n, n))
     return A + A.T
 
 
 def features(A, docs, meta_weight):
-    """Each title's row of the link graph, smoothed one hop (titles that share neighbours get similar rows),
-    plus TF-IDF metadata; reduced with SVD and normalised for cosine distance."""
+    """Each title's direct links, plus its links smoothed one hop (titles that share neighbours get similar
+    rows), plus TF-IDF metadata; reduced with SVD and normalised for cosine distance."""
     n = A.shape[0]
     R = normalize(A + sparse.identity(n, format="csr"))
-    parts = [normalize(R @ R + R)]
+    parts = [R, 0.5 * normalize(R @ R)]
     if docs is not None:
         M = TfidfVectorizer(token_pattern=r"\S+", min_df=2, sublinear_tf=True).fit_transform(docs)
         parts.append(meta_weight * normalize(M))
@@ -74,7 +81,7 @@ def features(A, docs, meta_weight):
     return normalize(TruncatedSVD(min(160, n - 1), random_state=SEED).fit_transform(X))
 
 
-def layout(X, n_neighbors=18, min_dist=0.2):
+def layout(X, n_neighbors=12, min_dist=0.1):
     return umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist, metric="cosine", random_state=SEED).fit_transform(X)
 
 
@@ -191,7 +198,7 @@ def screen(kind, min_votes):
             t.add(f"d_{int(r['y']) // 10 * 10}")
         toks.append(t)
         docs.append(" ".join(sorted(t)) + " " + " ".join(f"g_{slug(g)}" for g in r["g"]))
-    X = features(A, docs, meta_weight=0.45)
+    X = features(A, docs, meta_weight=0.3)
     xy = layout(X)
     labels = cluster(xy, max(30, n // 160))
 
@@ -235,7 +242,7 @@ def music(min_fans=25_000):
     n = len(rows)
     links = [[idx[j] for j, _, _ in r["related"] if j in idx] for r in rows]
     X = features(link_matrix(n, links), None, 0)
-    xy = layout(X, n_neighbors=15, min_dist=0.2)
+    xy = layout(X)
     labels = cluster(xy, max(25, n // 140))
     names = unique(examples(labels, [r["name"] for r in rows], [r["fans"] for r in rows], k=2))
     nn = nearby(X, links, [r["fans"] for r in rows])
