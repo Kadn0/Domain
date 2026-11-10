@@ -178,7 +178,9 @@ function showMarkers() {
 function renderList() {
   document.querySelectorAll('[data-world-tab]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.worldTab === tab)));
   const items = PLACES[tab];
-  note.textContent = `${items.length} on the globe. Drag to turn it, scroll or pinch to come in, and pick one.`;
+  note.textContent = view.flat
+    ? `${items.length} places. This browser can't draw the globe (WebGL is off), so here is the list on its own.`
+    : `${items.length} on the globe. Drag to turn it, scroll or pinch to come in, and pick one.`;
   list.innerHTML = items.map(([name, where], i) => `<li><button type="button" data-i="${i}"><b>${name}</b><small>${where}</small></button></li>`).join('');
   list.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
     const [, , lat, lon] = items[Number(b.dataset.i)];
@@ -192,9 +194,19 @@ function setTab(next) {
   renderList();
 }
 
+let opener = null; // whatever opened the World gets the focus back when it closes
+
 function open() {
-  if (!window.THREE) return;
-  if (!view) view = build();
+  if (!panel.hidden) return;
+  if (!view) {
+    try {
+      view = build();
+    } catch (error) {
+      // no three.js or no WebGL: still open, with the list and no globe, rather than a button that does nothing
+      view = { flat: true, open: false, markers: {}, focus() {}, start() {} };
+    }
+  }
+  opener = document.activeElement;
   panel.hidden = false;
   document.documentElement.classList.add('world-open');
   view.open = true;
@@ -203,14 +215,21 @@ function open() {
   $('worldExit').focus();
 }
 
-function close() {
+function close(restoreFocus = true) {
+  if (panel.hidden) return;
   panel.hidden = true;
   document.documentElement.classList.remove('world-open');
   if (view) view.open = false;
+  // opened from a #world link: drop the hash, or the next reload opens the World again
+  if (location.hash === '#world') history.replaceState(null, '', location.pathname + location.search);
+  if (restoreFocus && opener instanceof HTMLElement && opener.isConnected) opener.focus({ preventScroll: true });
 }
 
 openBtns.forEach((b) => b.addEventListener('click', open));
-$('worldExit').addEventListener('click', close);
+$('worldExit').addEventListener('click', () => close());
 document.querySelectorAll('[data-world-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.worldTab)));
+// the rail stays on screen beside the World; picking a chapter there should take you to it
+document.querySelectorAll('#rail [data-go]').forEach((b) => b.addEventListener('click', () => close(false)));
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) close(); });
+window.addEventListener('hashchange', () => { if (location.hash === '#world') open(); });
 if (location.hash === '#world') open();
