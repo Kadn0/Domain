@@ -170,10 +170,14 @@ async function fetchAdditionalMinecraftNames() {
   }
 }
 
-async function fetchMinecraftStatus(element) {
+// quiet: a background refresh. The chip keeps what it last said until the new answer is in, instead of
+// dropping back to "Checking..." (and taking the rail's lab light with it) once a minute.
+async function fetchMinecraftStatus(element, quiet = false) {
   if (!element) return;
-  updateStatusChip(element, null, 'Checking server status...');
-  setStatusTooltip(element, null);
+  if (!quiet) {
+    updateStatusChip(element, null, 'Checking server status...');
+    setStatusTooltip(element, null);
+  }
   try {
     let data = null;
 
@@ -239,7 +243,9 @@ async function fetchMinecraftStatus(element) {
         Object.keys(data.players.uuid).forEach(addName);
       }
 
-      const reportedCount = Number.isFinite(data?.players?.online) ? data.players.online : collectedNames.length;
+      // mcsrvstat and mcstatus count players under "online"; mcapi.us calls it "now"
+      const reported = data?.players?.online ?? data?.players?.now;
+      const reportedCount = Number.isFinite(reported) ? reported : collectedNames.length;
       const playerCount = Math.max(0, reportedCount);
       const suffix = playerCount === 1 ? 'player' : 'players';
 
@@ -281,7 +287,7 @@ async function fetchMinecraftStatus(element) {
         setStatusTooltip(element, 'Server is idle and ready for players.');
       }
     } else {
-      updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server -  Offline`);
+      updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} Minecraft Server - Offline`);
       setStatusTooltip(element, null);
     }
   } catch (error) {
@@ -290,9 +296,9 @@ async function fetchMinecraftStatus(element) {
   }
 }
 
-async function fetchNasStatus(element) {
+async function fetchNasStatus(element, quiet = false) {
   if (!element) return;
-  updateStatusChip(element, null, 'Checking NAS...');
+  if (!quiet) updateStatusChip(element, null, 'Checking NAS...');
   try {
     const response = await fetch('https://fin.kadents.com/health', {
       cache: 'no-store',
@@ -314,16 +320,15 @@ function initStatusChecks() {
   const minecraftStatusEl = document.getElementById('mc-status');
   const nasStatusEl = document.getElementById('nas-status');
 
+  // the first check says "Checking..."; the once-a-minute refreshes after it are quiet
   if (minecraftStatusEl) {
-    const runMinecraftCheck = () => fetchMinecraftStatus(minecraftStatusEl);
-    runMinecraftCheck();
-    window.setInterval(runMinecraftCheck, STATUS_REFRESH_INTERVAL);
+    fetchMinecraftStatus(minecraftStatusEl);
+    window.setInterval(() => fetchMinecraftStatus(minecraftStatusEl, true), STATUS_REFRESH_INTERVAL);
   }
 
   if (nasStatusEl) {
-    const runNasCheck = () => fetchNasStatus(nasStatusEl);
-    runNasCheck();
-    window.setInterval(runNasCheck, STATUS_REFRESH_INTERVAL);
+    fetchNasStatus(nasStatusEl);
+    window.setInterval(() => fetchNasStatus(nasStatusEl, true), STATUS_REFRESH_INTERVAL);
   }
 }
 

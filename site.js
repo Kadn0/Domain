@@ -395,6 +395,7 @@ document.querySelectorAll('#ch-05, [data-id="mc"]').forEach((el) => el.addEventL
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !modal.hidden) {
     closeModal();
+    event.stopImmediatePropagation(); // one Escape closes one thing: leave the World open behind the card
     return;
   }
   if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -541,6 +542,8 @@ resetIdle();
   let mode = 0; // 0 clock, 1 scroller, 2 plasma (hidden)
   let scroll = 64;
   let last = 0;
+  let onScreen = true; // 4,096 dots twenty times a second is only worth drawing while someone can see them
+  if ('IntersectionObserver' in window) new IntersectionObserver(([entry]) => { onScreen = entry.isIntersecting; }).observe(canvas);
 
   canvas.addEventListener('click', () => {
     mode = (mode + 1) % 3;
@@ -578,7 +581,7 @@ resetIdle();
 
   function draw(now) {
     window.requestAnimationFrame(draw);
-    if (now - last < 50) return;
+    if (!onScreen || document.hidden || root.classList.contains('world-open') || now - last < 50) return;
     last = now;
     const t = now / 1000;
     const data = mode === 2 ? null : textFrame(now);
@@ -613,7 +616,7 @@ console.log(
     '%cKADENTS%c',
     "Hi, I'm Kaden. Poking around under the hood? Good instinct.",
     'The code is public: https://github.com/Kadn0/Domain',
-    'There are 13 eggs on this page. The console will not give you any of them.',
+    `There are ${TOTAL} eggs on this page. The console will not give you any of them.`,
   ].join('\n'),
   'font: 300 28px "Hanken Grotesk", sans-serif; letter-spacing: -0.02em;',
   'font: 12px "Martian Mono", monospace; line-height: 1.6;'
