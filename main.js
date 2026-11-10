@@ -300,13 +300,14 @@ async function fetchMinecraftStatus(element, quiet = false) {
 // When Jellyfin or the tunnel is down, Cloudflare answers with its own 502/530 page, which has no CORS
 // header, so the fetch rejects and the chip says offline. (A no-cors probe can't tell the two apart: its
 // response is opaque either way.)
+// An origin that hangs instead of refusing counts as offline after 8 seconds. Without the limit the chip
+// would sit on "Checking NAS..." (or on a stale "Online" during a quiet refresh) for as long as the
+// request stayed open.
 async function fetchNasStatus(element, quiet = false) {
   if (!element) return;
   if (!quiet) updateStatusChip(element, null, 'Checking NAS...');
   try {
-    const response = await fetch('https://fin.kadents.com/health', {
-      cache: 'no-store',
-    });
+    const response = await fetchWithTimeout('https://fin.kadents.com/health', { cache: 'no-store' }, 8000);
 
     if (response.ok) {
       updateStatusChip(element, 'is-online', `${STATUS_ICON.online} NAS - Online`);
