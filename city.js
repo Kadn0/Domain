@@ -2028,7 +2028,7 @@ function build() {
     const active = root.classList.contains('in-chapters');
     if (active) idleUntil = now + 1500;
     showHud(now);
-    if (now > idleUntil || document.hidden) return;
+    if (now > idleUntil || document.hidden || root.classList.contains('world-open')) return; // the World covers the city
     if (raw < 0.25) adapt(raw); // ignore the gap after a pause
     clock += dt;
 
