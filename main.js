@@ -296,17 +296,19 @@ async function fetchMinecraftStatus(element, quiet = false) {
   }
 }
 
+// A normal CORS request, judged by its status. Jellyfin sends Access-Control-Allow-Origin: * on /health.
+// When Jellyfin or the tunnel is down, Cloudflare answers with its own 502/530 page, which has no CORS
+// header, so the fetch rejects and the chip says offline. (A no-cors probe can't tell the two apart: its
+// response is opaque either way.)
 async function fetchNasStatus(element, quiet = false) {
   if (!element) return;
   if (!quiet) updateStatusChip(element, null, 'Checking NAS...');
   try {
     const response = await fetch('https://fin.kadents.com/health', {
       cache: 'no-store',
-      mode: 'no-cors',
     });
 
-    const reachable = response.ok || response.type === 'opaque';
-    if (reachable) {
+    if (response.ok) {
       updateStatusChip(element, 'is-online', `${STATUS_ICON.online} NAS - Online`);
     } else {
       updateStatusChip(element, 'is-offline', `${STATUS_ICON.offline} NAS - Offline`);
