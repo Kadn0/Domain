@@ -44,6 +44,10 @@
       for (let i = 0; i < N; i++) D.rad[i] = 0.75 + 1.0 * (Math.log1p(sz[i]) / mx) ** 2;
     } else D.rad.fill(1);
     D.lc = d.t.map((s) => String(s).toLowerCase());
+    D.key = d.t.map(fold);
+    const seen = new Map();
+    for (const t of D.lc) seen.set(t, (seen.get(t) || 0) + 1);
+    D.dup = D.lc.map((t) => seen.get(t) > 1); // titles more than one item shares (six films are called Hamlet)
     buildGrid();
     $("#count").textContent = N.toLocaleString();
     $("#source").textContent = d.meta.source;
@@ -230,7 +234,7 @@
   /* ---------- pointer: pan, pinch, hover, click ---------- */
   const pts = new Map();
   let moved = 0, pinch = 0;
-  cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; pinch = 0; });
+  cv.addEventListener("pointerdown", (e) => { anim++; cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; pinch = 0; });
   cv.addEventListener("pointermove", (e) => {
     const p = pts.get(e.pointerId);
     if (!p) return onHover(e);
@@ -264,6 +268,7 @@
   cv.addEventListener("pointerleave", () => { if (!pts.size) hideTip(); });
   cv.addEventListener("wheel", (e) => {
     e.preventDefault();
+    anim++;
     const r = cv.getBoundingClientRect();
     zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0018)));
   }, { passive: false });
@@ -274,15 +279,19 @@
     view.x = x - (px - W / 2) / view.k; view.y = y - (py - H / 2) / view.k;
     draw();
   }
+  let anim = 0; // bumped by every new animation and by the user's own drag or scroll, which stops the one running
   function animateZoom(px, py, f) {
-    let t = 0; const steps = 14, s = f ** (1 / steps);
-    const tick = () => { zoomAt(px, py, s); if (++t < steps) requestAnimationFrame(tick); };
+    let t = 0; const steps = 14, s = f ** (1 / steps), me = ++anim;
+    const tick = () => { if (me !== anim) return; zoomAt(px, py, s); if (++t < steps) requestAnimationFrame(tick); };
     tick();
   }
-  function flyTo(x, y, k) {
-    const from = { ...view }, to = { x, y, k: clampK(k) }, t0 = performance.now(), dur = 700;
+  // at: the screen point the place should land on (the middle, unless a panel is covering the middle)
+  function flyTo(x, y, k, at = [W / 2, H / 2]) {
+    k = clampK(k);
+    const from = { ...view }, to = { x: x - (at[0] - W / 2) / k, y: y - (at[1] - H / 2) / k, k }, t0 = performance.now(), dur = 700, me = ++anim;
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
     const step = (now) => {
+      if (me !== anim) return;
       const t = Math.min(1, (now - t0) / dur), e = ease(t);
       view.k = Math.exp(Math.log(from.k) + (Math.log(to.k) - Math.log(from.k)) * e);
       view.x = from.x + (to.x - from.x) * e; view.y = from.y + (to.y - from.y) * e;
@@ -355,17 +364,31 @@
       <p class="c-h">If you like ${esc(D.t[i])}</p>
       <ol class="near">${near.map((j) => `<li><button type="button" data-i="${j}"><img class="${SQUARE ? "sq" : ""}" src="${esc(img(j, false))}" alt="" loading="lazy"><span>${esc(D.t[j])}<small>${esc(KIND === "music" ? fmt(D.v[j]) + " fans" : D.yr[j] || "")}</small></span></button></li>`).join("")}</ol>`;
     card.hidden = false;
-    history.replaceState(null, "", `#${encodeURIComponent(D.t[i])}`);
+    // a shared title gets its id on the end, so the link opens this one and not its best-known namesake
+    history.replaceState(null, "", `#${encodeURIComponent(D.t[i])}${D.dup[i] ? `~${D.id[i]}` : ""}`);
+    const at = freeArea();
     if (fly) {
-      // zoom so the item and its neighbours fill the middle of the screen
+      // zoom so the item and its neighbours fill the free part of the screen
       let r = 0;
       for (const j of near.slice(0, 5)) r = Math.max(r, Math.abs(D.x[j] - D.x[i]), Math.abs(D.y[j] - D.y[i]));
-      const k = Math.min(W, H) * 0.32 / Math.max(r, 30);
-      flyTo(D.x[i], D.y[i], Math.min(Math.max(k, base * 3), base * 30));
-    }
+      const k = Math.min(at[2], at[3]) * 0.32 / Math.max(r, 30);
+      flyTo(D.x[i], D.y[i], Math.min(Math.max(k, base * 3), base * 30), at);
+    } else if (under(sx(D.x[i]), sy(D.y[i]))) flyTo(D.x[i], D.y[i], view.k, at); // tapped a dot the card then covered
     draw();
   }
   const bar = (l, v) => `<span><em>${l}</em><b style="--v:${v}"></b></span>`;
+  // The part of the screen the header and the details card leave free: [centre x, centre y, width, height].
+  // On a phone the card fills the bottom half, so the middle of the screen is under it.
+  function freeArea() {
+    const c = card.getBoundingClientRect(), h = $(".head").getBoundingClientRect();
+    if (c.width > W * 0.7) { const top = h.bottom, ht = Math.max(80, c.top - top); return [W / 2, top + ht / 2, W, ht]; }
+    if (W / 2 > c.right + 60) return [W / 2, H / 2, W, H];
+    return [(c.right + W) / 2, H / 2, W - c.right, H];
+  }
+  function under(px, py) {
+    const c = card.getBoundingClientRect();
+    return px > c.left - 12 && px < c.right + 12 && py > c.top - 12 && py < c.bottom + 12;
+  }
   function deselect() { sel = -1; near = []; card.hidden = true; history.replaceState(null, "", location.pathname); draw(); }
   card.addEventListener("click", (e) => {
     const n = e.target.closest("[data-i]"), cl = e.target.closest("[data-c]");
@@ -392,17 +415,17 @@
   /* ---------- search ---------- */
   const q = $("#q"), res = $("#results");
   let hits = [], active = 0;
-  q.addEventListener("input", () => {
-    const s = q.value.trim().toLowerCase();
+  function search() {
+    const s = fold(q.value);
     if (!D || s.length < 2) { res.hidden = true; return; }
     hits = [];
     const bare = (t) => t.replace(/^(the|a|an) /, "");
     for (let i = 0; i < N; i++) {
-      const t = D.lc[i], at = t.indexOf(s);
+      const t = D.key[i], at = t.indexOf(s);
       let rank = -1;
       if (t === s || bare(t) === bare(s)) rank = 0;
       else if (at === 0 || bare(t).startsWith(s)) rank = 1;
-      else if (at > 0 && /\W/.test(t[at - 1])) rank = 2;
+      else if (at > 0 && t[at - 1] === " ") rank = 2;
       else if (at > 0) rank = 3;
       if (rank >= 0) hits.push([rank, -weight(i), t.length, i]);
     }
@@ -410,7 +433,10 @@
     active = 0;
     res.innerHTML = hits.length ? hits.map((i, n) => `<li><button type="button" data-i="${i}" ${n === 0 ? 'class="on"' : ""}><i style="background:${D.col[D.c[i]]}"></i>${esc(D.t[i])} <small>${esc(sub(i))}</small></button></li>`).join("") : `<li class="none">No match</li>`;
     res.hidden = false;
-  });
+  }
+  q.addEventListener("input", search);
+  q.addEventListener("focus", search);
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest(".search")) res.hidden = true; });
   q.addEventListener("keydown", (e) => {
     if (res.hidden || !hits.length) return;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -432,14 +458,31 @@
   $("#zout").addEventListener("click", () => animateZoom(W / 2, H / 2, 0.5));
   $("#zfit").addEventListener("click", () => { setFocus(-1, false); flyTo(5000, 5000, base); });
   function fromHash() {
-    const t = decodeURIComponent(location.hash.slice(1)).toLowerCase();
+    let t = location.hash.slice(1);
+    try { t = decodeURIComponent(t); } catch { /* a hand-typed % that isn't an escape: read it as written */ }
+    t = t.toLowerCase();
     if (!t) return;
+    const m = t.match(/^(.*)~(\d+)$/); // "title~id", written by select() for titles that aren't unique
+    if (m) {
+      const i = D.id.indexOf(+m[2]);
+      if (i >= 0) return select(i, true);
+    }
     let best = -1;
-    for (let i = 0; i < N; i++) if (D.lc[i] === t && (best < 0 || weight(i) > weight(best))) best = i;
+    for (const want of m ? [t, m[1]] : [t]) {
+      for (let i = 0; i < N; i++) if (D.lc[i] === want && (best < 0 || weight(i) > weight(best))) best = i;
+      if (best >= 0) break;
+    }
     if (best >= 0) select(best, true);
   }
   addEventListener("hashchange", () => { if (D) fromHash(); });
   addEventListener("resize", () => { const k = view.k / base; resize(); base = Math.min(W, H) / 10400; view.k = base * k; draw(); });
 
+  // one spelling for searching: no accents, no punctuation, lower case ("Amélie" and "WALL·E" become "amelie" and "wall e")
+  function fold(s) {
+    const odd = { "ø": "o", "ß": "ss", "æ": "ae", "œ": "oe", "đ": "d", "ð": "d", "ł": "l", "ı": "i", "þ": "th" };
+    const lower = String(s ?? "").toLowerCase();
+    const out = lower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[øßæœđðłıþ]/g, (c) => odd[c]).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+    return out || lower.trim(); // a name that is all punctuation ("!!!") keeps its own spelling
+  }
   function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 })();

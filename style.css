@@ -147,7 +147,8 @@ html.loading .loadline i { width: 0; }
 #title { margin: 2px 0 0; font: 400 clamp(64px, 11vw, 132px)/0.9 var(--sans); letter-spacing: -0.03em; user-select: none; }
 .quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 6px; }
 .quick .tour { margin-left: auto; }
-@media (max-width: 899px) { .quick .tour { margin-left: 0; } }
+.quick .narrow { display: none; } /* extras the rail already lists; they only need a button here once the rail is gone */
+@media (max-width: 899px) { .quick .tour { margin-left: 0; } .quick .narrow { display: inline-flex; } }
 html.loading .quick { opacity: 0; }
 .sub { margin: 10px 0 0; font: 400 10px/1.5 var(--mono); letter-spacing: 0.04em; color: var(--muted); }
 .drawing { position: relative; margin-top: 40px; container-type: inline-size; }
