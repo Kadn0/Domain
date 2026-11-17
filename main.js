@@ -12,19 +12,29 @@ const STATUS_ICON = {
 // The page's addresses, copy buttons and status check all read from here.
 //   java:    what a Java player types in Multiplayer, "host" or "host:port" (also what the status check asks about)
 //   bedrock: Bedrock's Add Server screen has separate Address and Port boxes, so the copy buttons copy only the host
+//   null for either: the server is between addresses; the page says so, hides that copy button, and skips the status check
+// mc.kadents.com was retired on 2026-11-17 because it pointed at the home network. The next addresses are playit.gg tunnels.
 const MINECRAFT = {
-  java: 'mc.kadents.com',
-  bedrock: { host: 'mc.kadents.com', port: 25565 },
+  java: null,     // e.g. 'name.gl.joinmc.link'
+  bedrock: null,  // e.g. { host: 'name.gl.at.ply.gg', port: 12345 }
 };
 const MINECRAFT_HOST = MINECRAFT.java;
 
+const MINECRAFT_PENDING = 'new address coming soon';
+
 function applyMinecraftAddresses() {
-  const value = { java: MINECRAFT.java, bedrock: MINECRAFT.bedrock.host };
-  document.querySelectorAll('[data-mc-copy]').forEach((el) => { el.dataset.copy = value[el.dataset.mcCopy]; });
-  document.querySelectorAll('[data-mc-text]').forEach((el) => { el.textContent = value[el.dataset.mcText]; });
+  const value = { java: MINECRAFT.java, bedrock: MINECRAFT.bedrock?.host ?? null };
+  document.querySelectorAll('[data-mc-copy]').forEach((el) => {
+    const v = value[el.dataset.mcCopy];
+    // a button that only copies hides; one that also shows the address stays, as plain text
+    if (v) { el.dataset.copy = v; el.hidden = false; el.disabled = false; }
+    else { delete el.dataset.copy; if (el.dataset.mcText) el.disabled = true; else el.hidden = true; }
+  });
+  document.querySelectorAll('[data-mc-text]').forEach((el) => { el.textContent = value[el.dataset.mcText] ?? MINECRAFT_PENDING; });
   document.querySelectorAll('[data-mc-port="bedrock"]').forEach((el) => {
+    const port = MINECRAFT.bedrock?.port;
     // 19132 is Bedrock's default, which players needn't type; any other port they must
-    el.textContent = MINECRAFT.bedrock.port === 19132 ? '' : `port ${MINECRAFT.bedrock.port}`;
+    el.textContent = !port || port === 19132 ? '' : `port ${port}`;
   });
 }
 // Optional: set this to a deployed proxy URL (Cloudflare Worker, Vercel function, etc.)
@@ -343,7 +353,9 @@ function initStatusChecks() {
   const nasStatusEl = document.getElementById('nas-status');
 
   // the first check says "Checking..."; the once-a-minute refreshes after it are quiet
-  if (minecraftStatusEl) {
+  if (minecraftStatusEl && !MINECRAFT_HOST) {
+    updateStatusChip(minecraftStatusEl, 'is-sleeping', `${STATUS_ICON.sleeping} Minecraft Server - Moving to a new address`);
+  } else if (minecraftStatusEl) {
     fetchMinecraftStatus(minecraftStatusEl);
     window.setInterval(() => fetchMinecraftStatus(minecraftStatusEl, true), STATUS_REFRESH_INTERVAL);
   }
