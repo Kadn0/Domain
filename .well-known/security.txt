@@ -1,0 +1,5 @@
+# Found a security problem on kadents.com or one of its services? Please report it privately here.
+Contact: https://github.com/Kadn0/Domain/security/advisories/new
+Expires: 2027-11-17T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://kadents.com/.well-known/security.txt
