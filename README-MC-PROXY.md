@@ -5,13 +5,14 @@ Overview
 - Deploy the worker and set `PROXY_URL` in `main.js` to the worker URL (e.g. `https://your-subdomain.workers.dev`).
 
 Worker behavior
-- Accepts a `host` query parameter (host or host:port).
+- Accepts a `host` query parameter, but only for the hosts listed in `ALLOWED_HOSTS`; anything else gets a 403, so the worker can't be used as an open relay.
+- Sends CORS headers only to the origins in `ALLOWED_ORIGINS` (kadents.com and www), and never echoes internal error messages.
 - Forwards the request to `https://api.mcsrvstat.us/2/<host>` and returns the JSON response.
 
 Deploy (quick)
 1. Install Wrangler: `npm install -g wrangler`.
 2. Authenticate and create a worker: `wrangler login`.
-3. Publish: `wrangler publish worker-mc-proxy.js --name mc-status-proxy`.
+3. Publish: `wrangler deploy worker-mc-proxy.js --name mc-status-proxy`.
 
 Notes
 - Cloudflare Workers are globally distributed and often reachable where some domains are blocked.

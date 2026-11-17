@@ -336,20 +336,20 @@
       if (D.r[i]) facts.push(`★ ${D.r[i].toFixed(1)} <small>(${D.v[i].toLocaleString()} votes)</small>`);
       if (D.cr[i]) facts.push(`By ${esc(D.cr[i])}`);
       if (D.a[i]) facts.push(`With ${esc(D.a[i])}`);
-      links.push(["TMDB", `https://www.themoviedb.org/movie/${D.id[i]}`]);
+      links.push(["TMDB", `https://www.themoviedb.org/movie/${encodeURIComponent(D.id[i])}`]);
       if (D.im[i]) links.push(["IMDb", `https://www.imdb.com/title/${encodeURIComponent(D.im[i])}/`]);
     } else if (KIND === "tv") {
       if (D.r[i]) facts.push(`★ ${D.r[i].toFixed(1)} <small>(${D.v[i].toLocaleString()} votes)</small>`);
       facts.push([D.s[i] ? `${D.s[i]} season${D.s[i] > 1 ? "s" : ""}` : "", esc(D.net[i])].filter(Boolean).join(" · "));
       if (D.cr[i]) facts.push(`Created by ${esc(D.cr[i])}`);
       if (D.a[i]) facts.push(`With ${esc(D.a[i])}`);
-      links.push(["TMDB", `https://www.themoviedb.org/tv/${D.id[i]}`], ["Where to watch", `https://www.justwatch.com/us/search?q=${encodeURIComponent(D.t[i])}`]);
+      links.push(["TMDB", `https://www.themoviedb.org/tv/${encodeURIComponent(D.id[i])}`], ["Where to watch", `https://www.justwatch.com/us/search?q=${encodeURIComponent(D.t[i])}`]);
     } else {
-      links.push(["Listen on Deezer", `https://www.deezer.com/artist/${D.id[i]}`]);
-      extra = `<div class="albums">${D.al[i].map(([id, t, y, cv]) => `<a href="https://www.deezer.com/album/${id}" target="_blank" rel="noopener"><img src="${DZ}cover/${cv}/250x250-000000-80-0-0.jpg" alt="" loading="lazy"><span>${esc(t)}</span><small>${esc(y)}</small></a>`).join("")}</div>`;
+      links.push(["Listen on Deezer", `https://www.deezer.com/artist/${encodeURIComponent(D.id[i])}`]);
+      extra = `<div class="albums">${D.al[i].map(([id, t, y, cv]) => `<a href="https://www.deezer.com/album/${encodeURIComponent(id)}" target="_blank" rel="noopener"><img src="${DZ}cover/${encodeURIComponent(cv)}/250x250-000000-80-0-0.jpg" alt="" loading="lazy"><span>${esc(t)}</span><small>${esc(y)}</small></a>`).join("")}</div>`;
     }
     const big = KIND === "music" && D.pic[i] ? `${DZ}artist/${D.pic[i]}/250x250-000000-80-0-0.jpg` : img(i, true);
-    if (big) art = `<img class="${SQUARE ? "sq" : ""}" src="${esc(big)}" alt="" onerror="this.remove()">`;
+    if (big) art = `<img class="${SQUARE ? "sq" : ""}" src="${esc(big)}" alt="">`;
     card.innerHTML = `
       <button class="x" type="button" aria-label="Close">&times;</button>
       <div class="c-top">${art}<div>
@@ -363,6 +363,8 @@
       ${extra}
       <p class="c-h">If you like ${esc(D.t[i])}</p>
       <ol class="near">${near.map((j) => `<li><button type="button" data-i="${j}"><img class="${SQUARE ? "sq" : ""}" src="${esc(img(j, false))}" alt="" loading="lazy"><span>${esc(D.t[j])}<small>${esc(KIND === "music" ? fmt(D.v[j]) + " fans" : D.yr[j] || "")}</small></span></button></li>`).join("")}</ol>`;
+    // the cover drops out if it fails to load (a listener, not an inline onerror, so the page's CSP can forbid inline script)
+    card.querySelector(".c-top > img")?.addEventListener("error", (e) => e.target.remove(), { once: true });
     card.hidden = false;
     // a shared title gets its id on the end, so the link opens this one and not its best-known namesake
     history.replaceState(null, "", `#${encodeURIComponent(D.t[i])}${D.dup[i] ? `~${D.id[i]}` : ""}`);
