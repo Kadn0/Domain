@@ -5,7 +5,7 @@
 // so nobody else can use it as a free relay for their own lookups (and burn this account's Worker quota).
 
 // Keep in step with MINECRAFT.java in main.js (the worker only ever looks up that address).
-const ALLOWED_HOSTS = new Set(['mc.kadents.com']);
+const ALLOWED_HOSTS = new Set([]); // empty while the server moves to playit.gg; add MINECRAFT.java's host when it has one
 const ALLOWED_ORIGINS = new Set(['https://kadents.com', 'https://www.kadents.com']);
 
 addEventListener('fetch', (event) => {
