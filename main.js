@@ -8,17 +8,40 @@ const STATUS_ICON = {
   warning: '!',
 };
 
-const MINECRAFT_HOST = 'serber.kadents.com';
+// Where players connect: the one place to change when the server moves (for example to a playit.gg tunnel).
+// The page's addresses, copy buttons and status check all read from here.
+//   java:    what a Java player types in Multiplayer, "host" or "host:port" (also what the status check asks about)
+//   bedrock: Bedrock's Add Server screen has separate Address and Port boxes, so the copy buttons copy only the host
+const MINECRAFT = {
+  java: 'mc.kadents.com',
+  bedrock: { host: 'mc.kadents.com', port: 25565 },
+};
+const MINECRAFT_HOST = MINECRAFT.java;
+
+function applyMinecraftAddresses() {
+  const value = { java: MINECRAFT.java, bedrock: MINECRAFT.bedrock.host };
+  document.querySelectorAll('[data-mc-copy]').forEach((el) => { el.dataset.copy = value[el.dataset.mcCopy]; });
+  document.querySelectorAll('[data-mc-text]').forEach((el) => { el.textContent = value[el.dataset.mcText]; });
+  document.querySelectorAll('[data-mc-port="bedrock"]').forEach((el) => {
+    // 19132 is Bedrock's default, which players needn't type; any other port they must
+    el.textContent = MINECRAFT.bedrock.port === 19132 ? '' : `port ${MINECRAFT.bedrock.port}`;
+  });
+}
 // Optional: set this to a deployed proxy URL (Cloudflare Worker, Vercel function, etc.)
 // Example: const PROXY_URL = 'https://your-worker.example.workers.dev';
 const PROXY_URL = null;
 
 // Public status APIs to try (in order). Some networks block specific domains,
 // so we try multiple providers before giving up.
+const enc = (host) => encodeURIComponent(host).replace(/%3A/gi, ':');
 const PUBLIC_STATUS_APIS = [
-  (host) => `https://api.mcsrvstat.us/2/${encodeURIComponent(host)}`,
-  (host) => `https://api.mcstatus.io/v2/status/java/${encodeURIComponent(host)}`,
-  (host) => `https://eu.mcapi.us/server/status?ip=${encodeURIComponent(host)}`,
+  (host) => `https://api.mcsrvstat.us/2/${enc(host)}`,
+  (host) => `https://api.mcstatus.io/v2/status/java/${enc(host)}`,
+  (host) => {
+    // mcapi.us takes the port as its own parameter
+    const [ip, port = '25565'] = host.split(':');
+    return `https://eu.mcapi.us/server/status?ip=${encodeURIComponent(ip)}&port=${encodeURIComponent(port)}`;
+  },
 ];
 
 // Aborts the request itself on timeout, rather than racing it: a raced fetch keeps its socket open after we give up.
@@ -137,7 +160,7 @@ function setStatusTooltip(element, message) {
 
 async function fetchAdditionalMinecraftNames() {
   try {
-    const response = await fetchWithTimeout(`https://api.mcstatus.io/v2/status/java/${MINECRAFT_HOST}`, { cache: 'no-store' });
+    const response = await fetchWithTimeout(`https://api.mcstatus.io/v2/status/java/${enc(MINECRAFT_HOST)}`, { cache: 'no-store' });
     if (!response.ok) return [];
     const payload = await response.json();
     const entries = Array.isArray(payload?.players?.list) ? payload.players.list : [];
@@ -331,5 +354,6 @@ function initStatusChecks() {
   }
 }
 
+applyMinecraftAddresses(); // before initCopyControls, which remembers each button's label
 initCopyControls();
 initStatusChecks();
