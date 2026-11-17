@@ -2,8 +2,10 @@
 <html lang="en" data-mode="eli5">
 <head>
   <meta charset="utf-8" />
-  <!-- Content Security Policy as a meta tag: GitHub Pages can't send response headers. (frame-ancestors only works as a header.) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://fin.kadents.com https://api.mcsrvstat.us https://api.mcstatus.io https://eu.mcapi.us; frame-src https://www.youtube-nocookie.com; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+  <!-- Content Security Policy as a meta tag, so it travels with the files. frame-ancestors is sent as a header by a Cloudflare rule.
+       cloudflareinsights.com is Cloudflare Web Analytics. Bot Fight Mode's inline detection script stays blocked on purpose:
+       allowing it would take 'unsafe-inline', and on the free plan it only feeds bot scoring. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cloudflareinsights.com https://fin.kadents.com https://api.mcsrvstat.us https://api.mcstatus.io https://eu.mcapi.us; frame-src https://www.youtube-nocookie.com; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Kadents</title>
