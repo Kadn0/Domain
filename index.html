@@ -102,7 +102,7 @@
         <a class="btn" href="https://fin.kadents.com" target="_blank" rel="noopener">Jellyfin</a>
         <a class="btn" href="https://seerr.kadents.com" target="_blank" rel="noopener">Seerr</a>
         <a class="btn" href="https://kadn.quickconnect.to" target="_blank" rel="noopener">Synology</a>
-        <button class="btn" type="button" data-copy="mc.kadents.com">Copy Minecraft IP</button>
+        <button class="btn" type="button" data-copy="mc.kadents.com" data-mc-copy="java">Copy Minecraft IP</button>
         <a class="btn" href="https://github.com/Kadn0" target="_blank" rel="noopener">GitHub</a>
         <a class="btn" href="/movies/">Movies</a>
         <a class="btn" href="/tv/">TV</a>
@@ -293,8 +293,8 @@
           <h2>One server for both editions</h2>
           <p>The status line asks three public server-status APIs in turn, then lists who's online.</p>
           <ul class="tech-list">
-            <li><b>Java:</b> <button class="link-button" type="button" data-copy="mc.kadents.com">mc.kadents.com</button></li>
-            <li><b>Bedrock:</b> <button class="link-button" type="button" data-copy="play.kadents.com">play.kadents.com</button></li>
+            <li><b>Java:</b> <button class="link-button" type="button" data-copy="mc.kadents.com" data-mc-copy="java" data-mc-text="java">mc.kadents.com</button></li>
+            <li><b>Bedrock:</b> <button class="link-button" type="button" data-copy="mc.kadents.com" data-mc-copy="bedrock" data-mc-text="bedrock">mc.kadents.com</button> <span data-mc-port="bedrock">port 25565</span></li>
           </ul>
         </div></div>
         <div class="ver" data-ver="comm"><div class="panel">
@@ -457,10 +457,10 @@
             </div>
           </li>
           <li class="row">
-            <div class="row-name"><strong>Minecraft</strong><span>Java mc.kadents.com · Bedrock play.kadents.com</span></div>
+            <div class="row-name"><strong>Minecraft</strong><span>Java <span data-mc-text="java">mc.kadents.com</span> · Bedrock <span data-mc-text="bedrock">mc.kadents.com</span> <span data-mc-port="bedrock">port 25565</span></span></div>
             <div class="row-actions">
-              <button class="btn primary" type="button" data-copy="mc.kadents.com">Copy Java</button>
-              <button class="btn ghost" type="button" data-copy="play.kadents.com">Copy Bedrock</button>
+              <button class="btn primary" type="button" data-copy="mc.kadents.com" data-mc-copy="java">Copy Java</button>
+              <button class="btn ghost" type="button" data-copy="mc.kadents.com" data-mc-copy="bedrock">Copy Bedrock</button>
             </div>
           </li>
         </ul>
