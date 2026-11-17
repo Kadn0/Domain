@@ -4,7 +4,8 @@
 // Locked down on purpose: it only looks up the hosts in ALLOWED_HOSTS and only answers pages on ALLOWED_ORIGINS,
 // so nobody else can use it as a free relay for their own lookups (and burn this account's Worker quota).
 
-const ALLOWED_HOSTS = new Set(['serber.kadents.com', 'mc.kadents.com', 'play.kadents.com']);
+// Keep in step with MINECRAFT.java in main.js (the worker only ever looks up that address).
+const ALLOWED_HOSTS = new Set(['mc.kadents.com']);
 const ALLOWED_ORIGINS = new Set(['https://kadents.com', 'https://www.kadents.com']);
 
 addEventListener('fetch', (event) => {
