@@ -16,16 +16,15 @@ const PROXY_URL = null;
 // Public status APIs to try (in order). Some networks block specific domains,
 // so we try multiple providers before giving up.
 const PUBLIC_STATUS_APIS = [
-  (host) => `https://api.mcsrvstat.us/2/${host}`,
-  (host) => `https://api.mcstatus.io/v2/status/java/${host}`,
-  (host) => `https://eu.mcapi.us/server/status?ip=${host}`,
+  (host) => `https://api.mcsrvstat.us/2/${encodeURIComponent(host)}`,
+  (host) => `https://api.mcstatus.io/v2/status/java/${encodeURIComponent(host)}`,
+  (host) => `https://eu.mcapi.us/server/status?ip=${encodeURIComponent(host)}`,
 ];
 
+// Aborts the request itself on timeout, rather than racing it: a raced fetch keeps its socket open after we give up.
+// credentials: 'omit' and no referrer: these are third-party APIs and need neither our cookies nor our URL.
 function fetchWithTimeout(url, opts = {}, timeout = 7000) {
-  return Promise.race([
-    fetch(url, opts),
-    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout)),
-  ]);
+  return fetch(url, { credentials: 'omit', referrerPolicy: 'no-referrer', ...opts, signal: AbortSignal.timeout(timeout) });
 }
 const PLAYER_UUID_OVERRIDES = {
   '00000000-0000-0000-0000-000000000000': 'Kaden (Admin)',
@@ -138,7 +137,7 @@ function setStatusTooltip(element, message) {
 
 async function fetchAdditionalMinecraftNames() {
   try {
-    const response = await fetch(`https://api.mcstatus.io/v2/status/java/${MINECRAFT_HOST}`, { cache: 'no-store' });
+    const response = await fetchWithTimeout(`https://api.mcstatus.io/v2/status/java/${MINECRAFT_HOST}`, { cache: 'no-store' });
     if (!response.ok) return [];
     const payload = await response.json();
     const entries = Array.isArray(payload?.players?.list) ? payload.players.list : [];
@@ -304,9 +303,7 @@ async function fetchNasStatus(element, quiet = false) {
   if (!element) return;
   if (!quiet) updateStatusChip(element, null, 'Checking NAS...');
   try {
-    const response = await fetch('https://fin.kadents.com/health', {
-      cache: 'no-store',
-    });
+    const response = await fetchWithTimeout('https://fin.kadents.com/health', { cache: 'no-store' });
 
     if (response.ok) {
       updateStatusChip(element, 'is-online', `${STATUS_ICON.online} NAS - Online`);
