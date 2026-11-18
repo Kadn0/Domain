@@ -629,7 +629,7 @@ function build() {
 
   // The real thing on the Jellyfin screen: YouTube's own player laid over the 3D screen with CSS3D.
   // It sits above the WebGL canvas, so it only shows in the Media chapter, where nothing stands in front of it.
-  const TV_VIDEO = '9v0tJsY61HU';
+  const TV_VIDEO = 'JoWTxdBdv2c';
   const tv = { ready: false, on: false, unmuted: false };
   if (THREE.CSS3DRenderer && THREE.CSS3DObject) {
     tv.renderer = new THREE.CSS3DRenderer();
